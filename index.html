@@ -1,0 +1,619 @@
+<title>Salsa piste par piste</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one column "mixing desk" — sticky transport with the 1–8 count on top, then the stack of layers in the order you add them. */
+:root {
+  --bg: #0f2420;        /* deep bottle green, a night-club wall */
+  --panel: #163029;
+  --panel-2: #1c3a32;
+  --line: #2b4b42;
+  --fg: #f4ecd9;        /* warm paper */
+  --muted: #a3b5ab;
+  --accent: #f5b82e;    /* marigold, the clave */
+  --hot: #ff6b4a;
+  --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --font-body: "Instrument Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 40px;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg);
+}
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+header.intro { padding-top: 20px; display: flex; flex-direction: column; gap: 6px; }
+header.intro h1 {
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 9vw, 54px);
+  line-height: .95; margin: 0; letter-spacing: -0.02em; text-wrap: balance;
+}
+header.intro h1 em { font-style: normal; color: var(--accent); }
+header.intro p { margin: 0; color: var(--muted); max-width: 60ch; }
+
+/* Sticky transport */
+.transport {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg);
+  padding-block: 10px;
+  display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+.play {
+  width: 64px; height: 64px; border-radius: 50%; border: 0;
+  background: var(--accent); color: #1b1404; cursor: pointer;
+  display: grid; place-items: center;
+  box-shadow: 0 0 0 0 rgba(245,184,46,.5);
+  transition: transform .1s;
+}
+.play:active { transform: scale(.94); }
+.play svg { width: 26px; height: 26px; fill: currentColor; }
+.play.playing { background: var(--hot); color: #2a0b04; }
+.play:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+.countbox { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.count { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.count span {
+  font-family: var(--font-mono); font-weight: 700; font-size: clamp(16px, 4.6vw, 22px);
+  text-align: center; padding: 4px 0; border-radius: 6px;
+  background: var(--panel); color: var(--muted);
+  transition: background .06s, color .06s;
+}
+.count span.pause { color: #6c8279; }
+.count span.now { background: var(--fg); color: var(--bg); }
+.count span.and { background: var(--panel-2); color: var(--fg); }
+.clavemarks { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; height: 6px; }
+.clavemarks i { border-radius: 3px; background: transparent; }
+.clavemarks i.hit { background: var(--accent); }
+.status { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+
+/* Controls */
+.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 520px) { .controls { grid-template-columns: 1fr; } }
+.ctl { background: var(--panel); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ctl .lab { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+.tempo-row { display: grid; grid-template-columns: 44px 1fr 44px; gap: 10px; align-items: center; }
+.tempo-val { font-family: var(--font-display); font-weight: 800; font-size: 34px; text-align: center; line-height: 1; font-variant-numeric: tabular-nums; }
+.tempo-val small { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+.round { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font-size: 22px; line-height: 1; cursor: pointer; }
+input[type=range] { width: 100%; accent-color: var(--accent); height: 28px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { border: 0; border-radius: 8px; padding: 10px 0; background: transparent; color: var(--muted); font-family: var(--font-mono); font-weight: 700; font-size: 16px; cursor: pointer; }
+.seg button[aria-pressed=true] { background: var(--accent); color: #1b1404; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+
+.build { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn {
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--fg);
+  border-radius: 999px; padding: 11px 16px; font: 600 15px var(--font-body); cursor: pointer;
+}
+.btn.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.btn:disabled { opacity: .4; cursor: default; }
+.auto { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.auto label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.auto input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
+.auto select { background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font: inherit; }
+
+/* Tracks */
+.tracks { display: flex; flex-direction: column; gap: 10px; }
+.track {
+  --c: var(--accent);
+  background: var(--panel); border-radius: 14px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  border: 1px solid transparent;
+  transition: opacity .2s, border-color .2s;
+}
+.track.off { opacity: .55; }
+.track.on { border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+.track.next { opacity: .8; border-style: dashed; border-color: var(--line); }
+.thead { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+.tname { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tname b { font-family: var(--font-display); font-weight: 800; font-size: 21px; line-height: 1.1; display: flex; align-items: baseline; gap: 8px; }
+.tname b .n { font-family: var(--font-mono); font-size: 12px; color: var(--c); font-weight: 700; }
+.tname .role { font-size: 13px; color: var(--muted); }
+.switch {
+  position: relative; width: 54px; height: 32px; border-radius: 16px; border: 0; cursor: pointer;
+  background: var(--panel-2); flex: none;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.switch::after {
+  content: ""; position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--muted); transition: transform .15s, background .15s;
+}
+.switch[aria-checked=true] { background: color-mix(in srgb, var(--c) 35%, var(--panel-2)); }
+.switch[aria-checked=true]::after { transform: translateX(22px); background: var(--c); }
+.steps { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
+.steps i {
+  aspect-ratio: 1 / 1.25; max-width: 100%; border-radius: 4px; background: var(--bg);
+  position: relative;
+}
+.steps i:nth-child(2n+1) { background: color-mix(in srgb, var(--bg) 80%, var(--fg)); }
+.steps i:nth-child(8) { margin-right: 4px; }
+.steps i.hit { background: color-mix(in srgb, var(--c) 55%, var(--bg)); }
+.steps i.hit.acc { background: var(--c); }
+.steps i.now { box-shadow: 0 0 0 2px var(--fg); }
+.track.on .steps i.hit.now { filter: brightness(1.35); transform: scale(1.08); }
+.tfoot { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+.tfoot input { flex: 1; }
+.tip { font-size: 13px; color: var(--fg); opacity: .85; margin: 0; }
+
+footer { color: var(--muted); font-size: 12.5px; display: flex; flex-direction: column; gap: 6px; }
+footer p { margin: 0; max-width: 65ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <h1>Salsa <em>piste par piste</em></h1>
+    <p>On part de la clave, puis tu empiles les percussions, la basse et le piano. Chaque couche se cale sur la précédente : écoute comment le groove se construit.</p>
+  </header>
+
+  <div class="transport">
+    <button class="play" id="play" aria-label="Lecture">
+      <svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg>
+    </button>
+    <div class="countbox">
+      <div class="count" id="count" aria-label="Compte 1 à 8">
+        <span>1</span><span>2</span><span>3</span><span class="pause">4</span><span>5</span><span>6</span><span>7</span><span class="pause">8</span>
+      </div>
+      <div class="clavemarks" id="clavemarks"></div>
+      <div class="status"><span id="level">1 / 9 pistes</span><span id="cycle">clave 3-2</span></div>
+    </div>
+  </div>
+
+  <section class="controls">
+    <div class="ctl">
+      <div class="lab"><span>Tempo</span><span id="tempoName">Classique</span></div>
+      <div class="tempo-row">
+        <button class="round" id="tDown" aria-label="Ralentir">−</button>
+        <div class="tempo-val"><span id="bpmVal">170</span><small>BPM</small></div>
+        <button class="round" id="tUp" aria-label="Accélérer">+</button>
+      </div>
+      <input type="range" id="bpm" min="90" max="220" step="1" value="170" aria-label="Tempo">
+    </div>
+    <div class="ctl">
+      <div class="lab"><span>Sens de la clave</span></div>
+      <div class="seg" id="claveSeg">
+        <button id="c32" aria-pressed="true">3-2</button>
+        <button id="c23" aria-pressed="false">2-3</button>
+      </div>
+      <p class="hint">3-2 : trois coups dans la 1re mesure, deux dans la 2e. Le piano et la cáscara suivent.</p>
+    </div>
+  </section>
+
+  <section class="ctl">
+    <div class="lab"><span>Construire le groove</span><span id="nextName"></span></div>
+    <div class="build">
+      <button class="btn primary" id="addNext">+ Ajouter la piste suivante</button>
+      <button class="btn" id="removeLast">− Retirer</button>
+      <button class="btn" id="reset">Clave seule</button>
+    </div>
+    <div class="auto">
+      <label><input type="checkbox" id="auto"> Montée auto : une piste toutes les</label>
+      <select id="autoN" aria-label="Nombre de cycles">
+        <option value="2">2 cycles</option>
+        <option value="4" selected>4 cycles</option>
+        <option value="8">8 cycles</option>
+      </select>
+      <span class="hint" id="autoInfo"></span>
+    </div>
+  </section>
+
+  <section class="tracks" id="tracks"></section>
+
+  <footer>
+    <p>Un cycle = 2 mesures = un tour de clave, compté 1 à 8 comme sur la piste de danse (4 et 8 sont les pauses du pas « on 1 »). Les cases de chaque piste représentent les 16 croches du cycle ; les plus vives sont les coups accentués.</p>
+    <p>Pas de son sur iPhone ? Désactive le mode silencieux (bouton sur le côté) et monte le volume, puis relance la lecture.</p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- State ----------
+  const state = { bpm: 170, clave: "32", on: {}, vol: {}, auto: false, autoN: 4 };
+  const STORE = "salsa-pistes-v1";
+  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch (e) {}
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
+
+  // ---------- Patterns (16 eighth notes = one clave cycle, written in 3-2) ----------
+  const rot = (s) => state.clave === "23" ? (s + 8) % 16 : s;
+  const CLAVE32 = [0, 3, 6, 10, 12];
+  const CASCARA32 = { 0: 1, 2: .55, 3: 1, 5: .55, 6: 1, 8: .55, 10: 1, 12: 1, 13: .55, 15: .55 };
+
+  const CONGA = ["heel", "tip", "slap", "tip", "heel", "tip", "open", "open"];
+  const BONGO = ["idx", "thumb", "idx", "heel", "idx", "thumb", "open", "heel"];
+  const CAMPANA = ["low", null, "high", "high", "low", null, "high", "high"];
+  const GUIRO = ["long", null, "short", "short", "long", null, "short", "short"];
+
+  // Montuno I–IV–V–IV (C F G F), anticipated on the "and"
+  const PIANO = {
+    1: [52, 60, 64], 2: [55, 64, 67], 3: [57, 65, 69], 5: [60, 69, 72], 6: [57, 65, 69],
+    7: [59, 67, 71], 9: [62, 71, 74], 10: [59, 67, 71], 11: [57, 65, 69], 13: [60, 69, 72],
+    14: [53, 57, 65], 15: [55, 64, 67]
+  };
+  // Tumbao bass: 2& and 4 of each bar, notes anticipate the next chord
+  const BASS = { 3: [41, 3], 6: [43, 5], 11: [41, 3], 14: [48, 5] };
+
+  const TRACKS = [
+    { id: "clave", name: "Clave", color: "#f5b82e", role: "Deux bâtons de bois. Le patron rythmique de tout l'orchestre.",
+      tip: "Tout le reste se cale dessus. Tape-la dans tes mains avant d'ajouter la suite.",
+      hit: s => CLAVE32.includes(rot(s)) ? { v: 1 } : null },
+    { id: "congas", name: "Congas", color: "#ff6b4a", role: "Le tumbao : talon, pointe, claqué, puis deux tons ouverts.",
+      tip: "Les deux coups ouverts sur 4 et 4& (et 8, 8&) sont le moteur du groove.",
+      hit: s => { const k = CONGA[s % 8]; const low = s === 15; return { k: low ? "tumba" : k, v: k === "open" || k === "slap" ? 1 : .5 }; } },
+    { id: "bongo", name: "Bongó", color: "#ff9d5c", role: "Le martillo : un flot continu de croches, ouvert sur le 4.",
+      tip: "Il remplit l'espace entre les coups de conga, très léger sauf sur le 4.",
+      hit: s => { const k = BONGO[s % 8]; return { k, v: k === "open" ? 1 : k === "idx" ? .7 : .4 }; } },
+    { id: "campana", name: "Campana", color: "#e8e2c4", role: "La cloche du bongosero : grave sur les temps, aiguë entre.",
+      tip: "Elle arrive au moment du « mambo » pour pousser l'énergie et marquer les temps 1, 3, 5, 7.",
+      hit: s => { const k = CAMPANA[s % 8]; return k ? { k, v: k === "low" ? 1 : .6 } : null; } },
+    { id: "guiro", name: "Güiro", color: "#a3d66e", role: "Calebasse grattée : un long, deux courts.",
+      tip: "Le frottement long ouvre chaque demi-mesure ; les deux courts relancent.",
+      hit: s => { const k = GUIRO[s % 8]; return k ? { k, v: k === "long" ? 1 : .6 } : null; } },
+    { id: "maracas", name: "Maracas", color: "#6fd3c1", role: "Toutes les croches, accent sur les temps.",
+      tip: "Une couche de brillance régulière qui lisse le tout.",
+      hit: s => ({ v: s % 2 === 0 ? 1 : .45 }) },
+    { id: "cascara", name: "Cáscara", color: "#86b6ff", role: "Le timbalero joue sur la coque du timbal.",
+      tip: "Elle suit la clave : ses accents tombent exactement sur les coups de clave.",
+      hit: s => { const v = CASCARA32[rot(s)]; return v ? { v } : null; } },
+    { id: "bajo", name: "Bajo", color: "#c99dff", role: "Le tumbao de basse : 2& et 4, jamais sur le 1.",
+      tip: "La basse anticipe l'accord suivant. Le 1 reste vide, c'est ce qui fait flotter la salsa.",
+      hit: s => BASS[s] ? { n: BASS[s][0], len: BASS[s][1], v: 1 } : null },
+    { id: "piano", name: "Piano", color: "#ff8fc0", role: "Le montuno : un motif en octaves sur Do, Fa, Sol, Fa.",
+      tip: "Il évite les temps forts et joue à contretemps, en dialogue avec la clave.",
+      hit: s => PIANO[s] ? { n: PIANO[s], v: s % 2 ? 1 : .75 } : null },
+  ];
+  if (!Object.keys(state.on).length) state.on = { clave: true };
+  TRACKS.forEach(t => { if (state.vol[t.id] == null) state.vol[t.id] = 0.8; });
+
+  // ---------- Audio ----------
+  let ctx = null, master = null, noiseBuf = null;
+  const bus = {};
+
+  function initAudio() {
+    if (ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    ctx = new AC({ latencyHint: "interactive" });
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.15;
+    master = ctx.createGain(); master.gain.value = 0.9;
+    master.connect(comp); comp.connect(ctx.destination);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    TRACKS.forEach(t => {
+      const g = ctx.createGain(); g.gain.value = state.vol[t.id] * state.vol[t.id];
+      g.connect(master); bus[t.id] = g;
+    });
+  }
+
+  // iPhone: play through the silent switch where Safari allows it, and unlock the context on tap.
+  function unlockIOS() {
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    try {
+      const b = ctx.createBuffer(1, 1, 22050); const s = ctx.createBufferSource();
+      s.buffer = b; s.connect(ctx.destination); s.start(0);
+    } catch (e) {}
+    try {
+      if (!unlockIOS.el) {
+        // 0.5 s of silent 8-bit WAV, looped, keeps iOS in "media playback" mode
+        const n = 4000, buf = new Uint8Array(44 + n), v = new DataView(buf.buffer);
+        const w = (o, s) => { for (let i = 0; i < s.length; i++) buf[o + i] = s.charCodeAt(i); };
+        w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true);
+        v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true);
+        v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, "data"); v.setUint32(40, n, true);
+        buf.fill(128, 44);
+        let bin = ""; buf.forEach(c => bin += String.fromCharCode(c));
+        const a = new Audio("data:audio/wav;base64," + btoa(bin));
+        a.loop = true; a.setAttribute("playsinline", ""); a.volume = 0.01;
+        unlockIOS.el = a;
+      }
+      const p = unlockIOS.el.play(); if (p && p.catch) p.catch(() => {});
+    } catch (e) {}
+  }
+
+  function env(g, t, peak, dur, att = 0.002) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + att);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  }
+  function tone(dest, t, { f, f2, gt, dur, type = "sine", g = 1, att }) {
+    const o = ctx.createOscillator(), e = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + (gt || dur * 0.5));
+    env(e, t, g, dur, att); o.connect(e); e.connect(dest);
+    o.start(t); o.stop(t + dur + 0.03);
+  }
+  function noise(dest, t, { dur, ftype = "bandpass", f = 2000, q = 1, g = 1, att }) {
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), e = ctx.createGain();
+    s.buffer = noiseBuf; fl.type = ftype; fl.frequency.value = f; fl.Q.value = q;
+    env(e, t, g, dur, att); s.connect(fl); fl.connect(e); e.connect(dest);
+    s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.03);
+    return e;
+  }
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+
+  const PLAY = {
+    clave(d, t, h) {
+      tone(d, t, { f: 2600, f2: 2450, dur: 0.09, g: 0.75 * h.v });
+      tone(d, t, { f: 1750, dur: 0.04, type: "triangle", g: 0.25 * h.v });
+      noise(d, t, { dur: 0.012, f: 3500, q: 2, g: 0.3 * h.v });
+    },
+    congas(d, t, h) {
+      const v = h.v;
+      if (h.k === "open" || h.k === "tumba") {
+        const f = h.k === "tumba" ? 220 : 330;
+        tone(d, t, { f: f * 1.18, f2: f, gt: 0.03, dur: 0.32, g: 0.85 * v });
+        tone(d, t, { f: f * 2.4, dur: 0.06, g: 0.12 * v });
+        noise(d, t, { dur: 0.02, f: 900, q: 1, g: 0.18 * v });
+      } else if (h.k === "slap") {
+        noise(d, t, { dur: 0.07, f: 1900, q: 0.9, g: 0.75 * v });
+        tone(d, t, { f: 460, f2: 380, dur: 0.06, g: 0.35 * v });
+      } else if (h.k === "heel") {
+        tone(d, t, { f: 120, f2: 85, dur: 0.07, g: 0.45 * v });
+      } else {
+        noise(d, t, { dur: 0.025, f: 1300, q: 1.2, g: 0.25 * v });
+        tone(d, t, { f: 310, dur: 0.035, g: 0.18 * v });
+      }
+    },
+    bongo(d, t, h) {
+      const v = h.v;
+      if (h.k === "open") { tone(d, t, { f: 470, f2: 400, gt: 0.02, dur: 0.18, g: 0.8 * v }); noise(d, t, { dur: 0.015, f: 2500, g: 0.2 * v }); }
+      else if (h.k === "idx") { tone(d, t, { f: 720, f2: 640, gt: 0.015, dur: 0.1, g: 0.6 * v }); noise(d, t, { dur: 0.012, f: 3200, g: 0.25 * v }); }
+      else if (h.k === "thumb") tone(d, t, { f: 560, dur: 0.045, g: 0.3 * v });
+      else tone(d, t, { f: 200, f2: 160, dur: 0.05, g: 0.35 * v });
+    },
+    campana(d, t, h) {
+      const low = h.k === "low", fs = low ? [540, 815] : [720, 1090];
+      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = low ? 1700 : 2300; bp.Q.value = 1.4;
+      const e = ctx.createGain(); env(e, t, 0.32 * h.v, low ? 0.32 : 0.14, 0.001);
+      bp.connect(e); e.connect(d);
+      fs.forEach(f => { const o = ctx.createOscillator(); o.type = "square"; o.frequency.value = f; o.connect(bp); o.start(t); o.stop(t + 0.36); });
+    },
+    guiro(d, t, h) {
+      const long = h.k === "long", dur = long ? 0.2 : 0.07;
+      const am = ctx.createGain(); am.connect(d);
+      const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter();
+      s.buffer = noiseBuf; fl.type = "bandpass"; fl.frequency.value = 3300; fl.Q.value = 1.3;
+      s.connect(fl); fl.connect(am);
+      const dt = 1 / 75, g = 0.6 * h.v;
+      am.gain.setValueAtTime(0, t);
+      for (let x = 0; x < dur; x += dt) {
+        const fade = long ? 0.6 + 0.4 * (x / dur) : 1;
+        am.gain.setValueAtTime(g * fade, t + x);
+        am.gain.setValueAtTime(g * 0.15 * fade, t + x + dt * 0.45);
+      }
+      am.gain.setValueAtTime(0, t + dur);
+      s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
+    },
+    maracas(d, t, h) {
+      noise(d, t, { dur: 0.055, ftype: "highpass", f: 6500, q: 0.7, g: 0.5 * h.v, att: 0.006 });
+    },
+    cascara(d, t, h) {
+      noise(d, t, { dur: 0.035, f: 4200, q: 2, g: 0.55 * h.v });
+      tone(d, t, { f: 1550, f2: 1300, dur: 0.035, type: "triangle", g: 0.28 * h.v });
+    },
+    bajo(d, t, h) {
+      const f = hz(h.n), dur = h.len * stepDur() * 0.95;
+      const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 2;
+      lp.frequency.setValueAtTime(1100, t); lp.frequency.exponentialRampToValueAtTime(320, t + 0.25);
+      const e = ctx.createGain();
+      e.gain.setValueAtTime(0.0001, t); e.gain.linearRampToValueAtTime(0.55, t + 0.008);
+      e.gain.exponentialRampToValueAtTime(0.28, t + dur * 0.7);
+      e.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
+      lp.connect(e); e.connect(d);
+      [["sawtooth", 1, 0.5], ["sine", 1, 0.9], ["triangle", 2, 0.25]].forEach(([type, m, gg]) => {
+        const o = ctx.createOscillator(), og = ctx.createGain();
+        o.type = type; o.frequency.value = f * m; og.gain.value = gg;
+        o.connect(og); og.connect(lp); o.start(t); o.stop(t + dur + 0.08);
+      });
+    },
+    piano(d, t, h) {
+      h.n.forEach((m, i) => {
+        const f = hz(m), g = (i === h.n.length - 1 ? 0.2 : 0.14) * h.v;
+        tone(d, t, { f, dur: 0.55, type: "triangle", g, att: 0.003 });
+        tone(d, t, { f: f * 2, dur: 0.25, g: g * 0.35, att: 0.002 });
+        tone(d, t, { f: f * 3, dur: 0.1, g: g * 0.12, att: 0.002 });
+      });
+    },
+  };
+
+  // ---------- Scheduler ----------
+  const stepDur = () => 60 / state.bpm / 2;
+  let playing = false, timer = null, nextTime = 0, stepN = 0, cycles = 0;
+  const uiQueue = [];
+
+  function scheduleStep(n, t) {
+    const s = n % 16;
+    if (s === 0 && n > 0) onCycle();
+    TRACKS.forEach(tr => {
+      if (!state.on[tr.id]) return;
+      const h = tr.hit(s);
+      if (!h) return;
+      const human = (Math.random() - 0.5) * 0.006;
+      const hh = Object.assign({}, h, { v: h.v * (0.92 + Math.random() * 0.12) });
+      PLAY[tr.id](bus[tr.id], Math.max(ctx.currentTime, t + (tr.id === "clave" ? 0 : human)), hh);
+    });
+    uiQueue.push({ s, t });
+  }
+  function scheduler() {
+    if (nextTime < ctx.currentTime - 0.2) nextTime = ctx.currentTime + 0.05;
+    while (nextTime < ctx.currentTime + 0.12) {
+      scheduleStep(stepN, nextTime);
+      nextTime += stepDur(); stepN++;
+    }
+  }
+  function onCycle() {
+    cycles++;
+    if (state.auto) {
+      const left = state.autoN - (cycles % state.autoN);
+      if (cycles % state.autoN === 0) { addNext(); }
+      setAutoInfo(cycles % state.autoN === 0 ? state.autoN : left);
+    }
+  }
+
+  let wake = null;
+  async function start() {
+    initAudio();
+    unlockIOS();
+    if (ctx.state !== "running") await ctx.resume();
+    playing = true; stepN = 0; cycles = 0; nextTime = ctx.currentTime + 0.08;
+    timer = setInterval(scheduler, 25); scheduler();
+    requestAnimationFrame(draw);
+    try { wake = await navigator.wakeLock.request("screen"); } catch (e) {}
+    setPlayUI(); setAutoInfo(state.autoN);
+  }
+  function stop() {
+    playing = false; clearInterval(timer); uiQueue.length = 0;
+    try { unlockIOS.el && unlockIOS.el.pause(); } catch (e) {}
+    try { wake && wake.release(); } catch (e) {}
+    wake = null; setPlayUI(); showStep(-1); setAutoInfo();
+  }
+
+  // ---------- UI ----------
+  const $ = id => document.getElementById(id);
+  const tracksEl = $("tracks"), countEls = [...$("count").children];
+  const cols = Array.from({ length: 16 }, () => []);
+  const trackEls = {};
+
+  function buildTracks() {
+    tracksEl.innerHTML = "";
+    cols.forEach(c => c.length = 0);
+    TRACKS.forEach((tr, i) => {
+      const el = document.createElement("article");
+      el.className = "track"; el.style.setProperty("--c", tr.color);
+      el.innerHTML = `
+        <div class="thead">
+          <div class="tname"><b><span class="n">${String(i + 1).padStart(2, "0")}</span>${tr.name}</b><span class="role">${tr.role}</span></div>
+          <button class="switch" role="switch" id="sw-${tr.id}" aria-label="${tr.name}"></button>
+        </div>
+        <div class="steps"></div>
+        <p class="tip">${tr.tip}</p>
+        <div class="tfoot"><span>Volume</span><input type="range" id="vol-${tr.id}" min="0" max="1" step="0.01" aria-label="Volume ${tr.name}"></div>`;
+      const steps = el.querySelector(".steps");
+      for (let s = 0; s < 16; s++) { const c = document.createElement("i"); steps.appendChild(c); cols[s].push(c); }
+      el.querySelector(".switch").addEventListener("click", () => { state.on[tr.id] = !state.on[tr.id]; save(); refresh(); });
+      const vol = el.querySelector("input");
+      vol.value = state.vol[tr.id];
+      vol.addEventListener("input", () => {
+        state.vol[tr.id] = +vol.value; save();
+        if (bus[tr.id]) bus[tr.id].gain.setTargetAtTime(state.vol[tr.id] * state.vol[tr.id], ctx.currentTime, 0.02);
+      });
+      tracksEl.appendChild(el);
+      trackEls[tr.id] = { el, cells: [...steps.children], sw: el.querySelector(".switch") };
+    });
+  }
+
+  function paintPatterns() {
+    TRACKS.forEach(tr => {
+      trackEls[tr.id].cells.forEach((c, s) => {
+        const h = tr.hit(s);
+        c.className = h ? (h.v >= 0.8 ? "hit acc" : "hit") : "";
+      });
+    });
+    const cm = $("clavemarks"); cm.innerHTML = "";
+    for (let s = 0; s < 16; s++) { const i = document.createElement("i"); if (TRACKS[0].hit(s)) i.className = "hit"; cm.appendChild(i); }
+  }
+
+  function refresh() {
+    const firstOff = TRACKS.findIndex(t => !state.on[t.id]);
+    TRACKS.forEach((tr, i) => {
+      const on = !!state.on[tr.id], te = trackEls[tr.id];
+      te.sw.setAttribute("aria-checked", on);
+      te.el.classList.toggle("on", on);
+      te.el.classList.toggle("off", !on && i !== firstOff);
+      te.el.classList.toggle("next", !on && i === firstOff);
+    });
+    const n = TRACKS.filter(t => state.on[t.id]).length;
+    $("level").textContent = `${n} / ${TRACKS.length} pistes`;
+    $("cycle").textContent = `clave ${state.clave === "32" ? "3-2" : "2-3"}`;
+    $("addNext").disabled = firstOff === -1;
+    $("removeLast").disabled = n === 0;
+    $("nextName").textContent = firstOff === -1 ? "Orchestre complet" : `Suivante : ${TRACKS[firstOff].name}`;
+    $("c32").setAttribute("aria-pressed", state.clave === "32");
+    $("c23").setAttribute("aria-pressed", state.clave === "23");
+    $("bpmVal").textContent = state.bpm; $("bpm").value = state.bpm;
+    $("tempoName").textContent = state.bpm < 140 ? "Pour apprendre" : state.bpm < 165 ? "Lente" : state.bpm < 195 ? "Classique" : "Rapide";
+    $("auto").checked = state.auto; $("autoN").value = state.autoN;
+  }
+
+  function addNext() {
+    const t = TRACKS.find(t => !state.on[t.id]);
+    if (t) { state.on[t.id] = true; save(); refresh(); }
+  }
+  function removeLast() {
+    const on = TRACKS.filter(t => state.on[t.id]);
+    if (on.length) { state.on[on[on.length - 1].id] = false; save(); refresh(); }
+  }
+  function setAutoInfo(left) {
+    const el = $("autoInfo");
+    if (!state.auto || !playing || left == null || TRACKS.every(t => state.on[t.id])) { el.textContent = ""; return; }
+    el.textContent = `prochaine dans ${left} cycle${left > 1 ? "s" : ""}`;
+  }
+
+  let lastStep = -1;
+  function showStep(s) {
+    if (s === lastStep) return;
+    if (lastStep >= 0) cols[lastStep].forEach(c => c.classList.remove("now"));
+    countEls.forEach(c => c.classList.remove("now", "and"));
+    lastStep = s;
+    if (s < 0) return;
+    cols[s].forEach(c => c.classList.add("now"));
+    countEls[s >> 1].classList.add(s % 2 ? "and" : "now");
+  }
+  function draw() {
+    if (!playing) return;
+    const now = ctx.currentTime;
+    let cur = null;
+    while (uiQueue.length && uiQueue[0].t <= now) cur = uiQueue.shift();
+    if (cur) showStep(cur.s);
+    requestAnimationFrame(draw);
+  }
+  function setPlayUI() {
+    const b = $("play");
+    b.classList.toggle("playing", playing);
+    b.setAttribute("aria-label", playing ? "Arrêter" : "Lecture");
+    $("playIcon").innerHTML = playing ? '<path d="M6 5h4.5v14H6zM13.5 5H18v14h-4.5z"/>' : '<path d="M7 4.5v15l13-7.5z"/>';
+  }
+
+  // ---------- Wiring ----------
+  $("play").addEventListener("click", () => playing ? stop() : start());
+  const setBpm = v => { state.bpm = Math.max(90, Math.min(220, Math.round(v))); save(); refresh(); };
+  $("bpm").addEventListener("input", e => setBpm(+e.target.value));
+  $("tDown").addEventListener("click", () => setBpm(state.bpm - 5));
+  $("tUp").addEventListener("click", () => setBpm(state.bpm + 5));
+  $("c32").addEventListener("click", () => { state.clave = "32"; save(); paintPatterns(); refresh(); });
+  $("c23").addEventListener("click", () => { state.clave = "23"; save(); paintPatterns(); refresh(); });
+  $("addNext").addEventListener("click", addNext);
+  $("removeLast").addEventListener("click", removeLast);
+  $("reset").addEventListener("click", () => { state.on = { clave: true }; save(); refresh(); });
+  $("auto").addEventListener("change", e => { state.auto = e.target.checked; cycles = 0; save(); setAutoInfo(state.autoN); });
+  $("autoN").addEventListener("change", e => { state.autoN = +e.target.value; cycles = 0; save(); setAutoInfo(state.autoN); });
+  document.addEventListener("keydown", e => {
+    if (e.code === "Space" && !/INPUT|SELECT|BUTTON/.test(e.target.tagName)) { e.preventDefault(); playing ? stop() : start(); }
+  });
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "visible" && playing) {
+      try { if (ctx.state !== "running") await ctx.resume(); wake = await navigator.wakeLock.request("screen"); } catch (e) {}
+    }
+  });
+
+  buildTracks(); paintPatterns(); refresh();
+})();
+</script>
