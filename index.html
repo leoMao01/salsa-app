@@ -5,231 +5,240 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: one column "mixing desk" — sticky transport with the 1–8 count on top, then the stack of layers in the order you add them. */
+/* Layout: a 3×3 "bandstand" of instrument tiles, build controls below, and a docked transport (count 1–8, key, tempo, clave, play) at the thumb. */
 :root {
-  --bg: #0f2420;        /* deep bottle green, a night-club wall */
-  --panel: #163029;
-  --panel-2: #1c3a32;
-  --line: #2b4b42;
-  --fg: #f4ecd9;        /* warm paper */
-  --muted: #a3b5ab;
-  --accent: #f5b82e;    /* marigold, the clave */
-  --hot: #ff6b4a;
+  --bg: #17110f;        /* espresso, a dim dance hall */
+  --panel: #241a16;
+  --panel-2: #30241f;
+  --line: #43332b;
+  --fg: #f6ecdf;
+  --muted: #b3a296;
+  --accent: #f5b82e;    /* marigold */
+  --hot: #ff6b4a;       /* coral, "le 1" */
   --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
   --font-body: "Instrument Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: dark;
 }
+[hidden] { display: none !important; }
 * { box-sizing: border-box; }
 html, body { background: var(--bg); color: var(--fg); }
 body {
-  font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.45;
+  font-family: var(--font-body); font-size: 15px; line-height: 1.45;
   -webkit-tap-highlight-color: transparent;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 0 40px;
+  padding-block: 0 calc(150px + env(safe-area-inset-bottom, 0px));
+  background-image: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--hot) 16%, transparent), transparent 70%);
+  background-repeat: no-repeat;
 }
-body::before {
-  content: ""; position: fixed; inset: 0 0 auto;
-  height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg);
-}
-.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+button, select { font: inherit; color: inherit; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 
-header.intro { padding-top: 20px; display: flex; flex-direction: column; gap: 6px; }
-header.intro h1 {
-  font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 9vw, 54px);
-  line-height: .95; margin: 0; letter-spacing: -0.02em; text-wrap: balance;
-}
+header.intro { padding-top: 18px; display: flex; flex-direction: column; gap: 6px; }
+header.intro h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 9vw, 52px); line-height: .95; margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
 header.intro h1 em { font-style: normal; color: var(--accent); }
 header.intro p { margin: 0; color: var(--muted); max-width: 60ch; }
 
-/* Sticky transport */
-.transport {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
-  background: var(--bg);
-  padding-block: 10px;
-  display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center;
-  border-bottom: 1px solid var(--line);
+/* Bandstand */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tile { position: relative; --c: var(--accent); min-width: 0; }
+.tile .open {
+  width: 100%; border: 1px solid var(--line); background: var(--panel); border-radius: 16px;
+  padding: 12px 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer;
+  text-align: center; transition: opacity .2s, border-color .2s, background .2s;
 }
-.play {
-  width: 64px; height: 64px; border-radius: 50%; border: 0;
-  background: var(--accent); color: #1b1404; cursor: pointer;
-  display: grid; place-items: center;
-  box-shadow: 0 0 0 0 rgba(245,184,46,.5);
-  transition: transform .1s;
+.tile .num { position: absolute; top: 9px; left: 11px; font: 700 11px var(--font-mono); color: var(--c); }
+.tile .ico { width: 62%; max-width: 92px; aspect-ratio: 1; display: block; transform-origin: 50% 70%; }
+.tile .ico svg { width: 100%; height: 100%; display: block; }
+.tile .tn { font: 800 16px/1.1 var(--font-display); }
+.tile .tv { font-size: 12px; color: var(--c); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile .spk {
+  position: absolute; top: 4px; right: 4px; width: 38px; height: 38px; border: 0; background: transparent;
+  display: grid; place-items: center; cursor: pointer; color: var(--c); border-radius: 50%;
 }
-.play:active { transform: scale(.94); }
-.play svg { width: 26px; height: 26px; fill: currentColor; }
-.play.playing { background: var(--hot); color: #2a0b04; }
-.play:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.tile .spk svg { width: 20px; height: 20px; }
+.tile.off .open { background: color-mix(in srgb, var(--panel) 60%, var(--bg)); }
+.tile.off .ico, .tile.off .tn, .tile.off .tv { opacity: .38; filter: grayscale(.8); }
+.tile.off .spk { color: var(--muted); }
+.tile.next .open { border-style: dashed; border-color: color-mix(in srgb, var(--c) 60%, transparent); }
+.tile.on .open { border-color: color-mix(in srgb, var(--c) 50%, transparent); background: color-mix(in srgb, var(--c) 7%, var(--panel)); }
+.tile.muted-by-solo .ico { opacity: .3; }
+.tile .solo-badge { position: absolute; bottom: 8px; right: 10px; font: 700 10px var(--font-mono); background: var(--hot); color: #230a04; padding: 2px 5px; border-radius: 5px; }
 
-.countbox { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.count { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
-.count span {
-  font-family: var(--font-mono); font-weight: 700; font-size: clamp(16px, 4.6vw, 22px);
-  text-align: center; padding: 4px 0; border-radius: 6px;
-  background: var(--panel); color: var(--muted);
-  transition: background .06s, color .06s;
-}
-.count span.pause { color: #6c8279; }
-.count span.now { background: var(--fg); color: var(--bg); }
-.count span.and { background: var(--panel-2); color: var(--fg); }
-.clavemarks { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; height: 6px; }
-.clavemarks i { border-radius: 3px; background: transparent; }
-.clavemarks i.hit { background: var(--accent); }
-.status { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
-
-/* Controls */
-.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 520px) { .controls { grid-template-columns: 1fr; } }
-.ctl { background: var(--panel); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.ctl .lab { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
-.tempo-row { display: grid; grid-template-columns: 44px 1fr 44px; gap: 10px; align-items: center; }
-.tempo-val { font-family: var(--font-display); font-weight: 800; font-size: 34px; text-align: center; line-height: 1; font-variant-numeric: tabular-nums; }
-.tempo-val small { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 4px; }
-.round { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font-size: 22px; line-height: 1; cursor: pointer; }
-input[type=range] { width: 100%; accent-color: var(--accent); height: 28px; }
-.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 10px; padding: 3px; gap: 3px; }
-.seg button { border: 0; border-radius: 8px; padding: 10px 0; background: transparent; color: var(--muted); font-family: var(--font-mono); font-weight: 700; font-size: 16px; cursor: pointer; }
-.seg button[aria-pressed=true] { background: var(--accent); color: #1b1404; }
-.hint { font-size: 12px; color: var(--muted); margin: 0; }
-
-.build { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.btn {
-  border: 1px solid var(--line); background: var(--panel-2); color: var(--fg);
-  border-radius: 999px; padding: 11px 16px; font: 600 15px var(--font-body); cursor: pointer;
-}
+/* Panels */
+.card { background: var(--panel); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.lab { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 999px; padding: 10px 15px; font-weight: 600; cursor: pointer; }
 .btn.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .btn:disabled { opacity: .4; cursor: default; }
-.auto { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
-.auto label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.auto input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
-.auto select { background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font: inherit; }
-
-/* Tracks */
-.tracks { display: flex; flex-direction: column; gap: 10px; }
-.track {
-  --c: var(--accent);
-  background: var(--panel); border-radius: 14px; padding: 12px 14px;
-  display: flex; flex-direction: column; gap: 10px;
-  border: 1px solid transparent;
-  transition: opacity .2s, border-color .2s;
-}
-.track.off { opacity: .55; }
-.track.on { border-color: color-mix(in srgb, var(--c) 45%, transparent); }
-.track.next { opacity: .8; border-style: dashed; border-color: var(--line); }
-.thead { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
-.tname { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.tname b { font-family: var(--font-display); font-weight: 800; font-size: 21px; line-height: 1.1; display: flex; align-items: baseline; gap: 8px; }
-.tname b .n { font-family: var(--font-mono); font-size: 12px; color: var(--c); font-weight: 700; }
-.tname .role { font-size: 13px; color: var(--muted); }
-.switch {
-  position: relative; width: 54px; height: 32px; border-radius: 16px; border: 0; cursor: pointer;
-  background: var(--panel-2); flex: none;
-  box-shadow: inset 0 0 0 1px var(--line);
-}
-.switch::after {
-  content: ""; position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%;
-  background: var(--muted); transition: transform .15s, background .15s;
-}
-.switch[aria-checked=true] { background: color-mix(in srgb, var(--c) 35%, var(--panel-2)); }
-.switch[aria-checked=true]::after { transform: translateX(22px); background: var(--c); }
-.vars { display: flex; gap: 8px; align-items: center; }
-.chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; min-width: 0; }
-.chip { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 11px; font: 600 13px var(--font-body); cursor: pointer; }
-.chip[aria-pressed=true] { background: var(--c); border-color: var(--c); color: #14100a; }
-.dice { flex: none; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); cursor: pointer; display: grid; place-items: center; }
-.dice svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; }
-.dice svg circle { fill: currentColor; stroke: none; }
-.dice:active svg { transform: rotate(90deg); }
-.steps { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
-.steps i {
-  aspect-ratio: 1 / 1.25; max-width: 100%; border-radius: 4px; background: var(--bg);
-  position: relative;
-}
-.steps i:nth-child(2n+1) { background: color-mix(in srgb, var(--bg) 80%, var(--fg)); }
-.steps i:nth-child(8) { margin-right: 4px; }
-.steps i.hit { background: color-mix(in srgb, var(--c) 55%, var(--bg)); }
-.steps i.hit.acc { background: var(--c); }
-.steps i.now { box-shadow: 0 0 0 2px var(--fg); }
-.track.on .steps i.hit.now { filter: brightness(1.35); transform: scale(1.08); }
-.tfoot { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
-.tfoot input { flex: 1; }
-.tip { font-size: 13px; color: var(--fg); opacity: .85; margin: 0; }
+.check { display: flex; align-items: center; gap: 9px; font-size: 14px; cursor: pointer; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.inline-select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .opts { grid-template-columns: 1fr; } }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--bg); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { border: 0; border-radius: 8px; padding: 9px 4px; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
+.seg button[aria-pressed=true] { background: var(--accent); color: #1b1404; }
+.full-select { width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; font-weight: 600; }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
 
 footer { color: var(--muted); font-size: 12.5px; display: flex; flex-direction: column; gap: 6px; }
 footer p { margin: 0; max-width: 65ch; }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Dock */
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.dock-in { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 9px; }
+.count { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.count span {
+  font: 700 clamp(16px, 4.6vw, 20px) var(--font-mono); text-align: center; padding: 5px 0; border-radius: 8px;
+  background: var(--panel); color: var(--muted); position: relative; transition: background .05s, color .05s;
+}
+.count span.key { color: var(--hot); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--hot) 60%, transparent); }
+.count span.now { background: var(--fg); color: var(--bg); }
+.count span.key.now { background: var(--hot); color: #230a04; }
+.count span.and { background: var(--panel-2); }
+.count span i { position: absolute; left: 50%; bottom: 2px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accent); }
+.count span i.b { left: 78%; }
+.ctrls { display: grid; grid-template-columns: repeat(4, 1fr) 58px; gap: 6px; align-items: center; }
+.pick {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; height: 52px; padding: 0 4px; cursor: pointer; min-width: 0;
+}
+.pick small { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.pick b { font: 700 15px var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pick select { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.pick.lit b { color: var(--accent); }
+.play {
+  width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--accent); color: #1b1404; cursor: pointer;
+  display: grid; place-items: center; transition: transform .1s;
+}
+.play:active { transform: scale(.94); }
+.play svg { width: 26px; height: 26px; fill: currentColor; }
+.play.playing { background: var(--hot); color: #230a04; }
+
+/* Sheet */
+.sheet { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; justify-content: flex-end; }
+.sheet .scrim { position: absolute; inset: 0; background: rgba(8, 5, 4, .6); border: 0; }
+.panel {
+  position: relative; background: var(--panel); border-radius: 22px 22px 0 0; max-height: 86%; overflow-y: auto;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; gap: 14px; --c: var(--accent);
+  animation: up .22s ease-out;
+}
+@keyframes up { from { transform: translateY(40px); opacity: .4; } }
+.panel .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto; }
+.panel-in { max-width: 720px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.ph { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; }
+.ph .ico { width: 56px; height: 56px; }
+.ph h2 { margin: 0; font: 800 24px/1.05 var(--font-display); }
+.ph p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.x { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); font-size: 20px; cursor: pointer; }
+.switch {
+  position: relative; width: 54px; height: 32px; border-radius: 16px; border: 0; cursor: pointer; flex: none;
+  background: var(--panel-2); box-shadow: inset 0 0 0 1px var(--line);
+}
+.switch::after { content: ""; position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%; background: var(--muted); transition: transform .15s; }
+.switch[aria-checked=true] { background: color-mix(in srgb, var(--c) 40%, var(--panel-2)); }
+.switch[aria-checked=true]::after { transform: translateX(22px); background: var(--c); }
+.btn[aria-pressed=true] { background: var(--hot); color: #230a04; border-color: var(--hot); }
+.vol { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+.vol input { flex: 1; accent-color: var(--c); height: 28px; }
+.steps { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
+.steps i { aspect-ratio: 1 / 1.3; border-radius: 4px; background: var(--bg); }
+.steps i:nth-child(2n+1) { background: color-mix(in srgb, var(--bg) 82%, var(--fg)); }
+.steps i:nth-child(8) { margin-right: 4px; }
+.steps i.hit { background: color-mix(in srgb, var(--c) 50%, var(--bg)); }
+.steps i.hit.acc { background: var(--c); }
+.steps i.now { box-shadow: 0 0 0 2px var(--fg); }
+.vlist { display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+.vlist button {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left;
+  padding: 13px 14px; border: 0; border-bottom: 1px solid var(--line); background: var(--panel-2); cursor: pointer; font-weight: 600;
+}
+.vlist button:last-child { border-bottom: 0; }
+.vlist button span { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.vlist button[aria-pressed=true] { background: color-mix(in srgb, var(--c) 22%, var(--panel-2)); box-shadow: inset 3px 0 0 var(--c); }
+.tip { font-size: 13.5px; margin: 0; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
 <div class="wrap">
   <header class="intro">
     <h1>Salsa <em>piste par piste</em></h1>
-    <p>On part de la clave, puis tu empiles les percussions, la basse et le piano. Chaque instrument a trois variantes : choisis-les ou laisse le hasard décider.</p>
+    <p>Ton orchestre de poche. Touche un instrument pour choisir son rythme, coupe-le avec le haut-parleur, et empile les pistes jusqu'au groove complet.</p>
   </header>
 
-  <div class="transport">
-    <button class="play" id="play" aria-label="Lecture">
-      <svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg>
-    </button>
-    <div class="countbox">
-      <div class="count" id="count" aria-label="Compte 1 à 8">
-        <span>1</span><span>2</span><span>3</span><span class="pause">4</span><span>5</span><span>6</span><span>7</span><span class="pause">8</span>
-      </div>
-      <div class="clavemarks" id="clavemarks"></div>
-      <div class="status"><span id="level">1 / 9 pistes</span><span id="cycle">clave 3-2</span></div>
-    </div>
-  </div>
+  <section class="grid" id="grid" aria-label="Instruments"></section>
 
-  <section class="controls">
-    <div class="ctl">
-      <div class="lab"><span>Tempo</span><span id="tempoName">Classique</span></div>
-      <div class="tempo-row">
-        <button class="round" id="tDown" aria-label="Ralentir">−</button>
-        <div class="tempo-val"><span id="bpmVal">170</span><small>BPM</small></div>
-        <button class="round" id="tUp" aria-label="Accélérer">+</button>
-      </div>
-      <input type="range" id="bpm" min="90" max="220" step="1" value="170" aria-label="Tempo">
-    </div>
-    <div class="ctl">
-      <div class="lab"><span>Sens de la clave</span></div>
-      <div class="seg" id="claveSeg">
-        <button id="c32" aria-pressed="true">3-2</button>
-        <button id="c23" aria-pressed="false">2-3</button>
-      </div>
-      <p class="hint">3-2 : trois coups dans la 1re mesure, deux dans la 2e. Le piano et la cáscara suivent.</p>
-    </div>
-  </section>
-
-  <section class="ctl">
-    <div class="lab"><span>Construire le groove</span><span id="nextName"></span></div>
-    <div class="build">
-      <button class="btn primary" id="addNext">+ Ajouter la piste suivante</button>
+  <section class="card">
+    <div class="lab"><span>Construire le groove</span><span id="level">1 / 9</span></div>
+    <div class="row">
+      <button class="btn primary" id="addNext">+ <span id="nextName">Piste suivante</span></button>
       <button class="btn" id="removeLast">− Retirer</button>
       <button class="btn" id="reset">Clave seule</button>
-      <button class="btn" id="shuffle">Tout mélanger</button>
+      <button class="btn" id="all">Tout</button>
+      <button class="btn" id="shuffle">Hasard</button>
     </div>
-    <div class="auto"><label><input type="checkbox" id="randAdd"> Variante tirée au hasard à chaque nouvelle piste</label></div>
-    <div class="auto">
-      <label><input type="checkbox" id="auto"> Montée auto : une piste toutes les</label>
-      <select id="autoN" aria-label="Nombre de cycles">
-        <option value="2">2 cycles</option>
-        <option value="4" selected>4 cycles</option>
-        <option value="8">8 cycles</option>
+    <label class="check"><input type="checkbox" id="randAdd"> Rythme tiré au hasard à chaque nouvelle piste</label>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="auto"> Montée auto, une piste toutes les</label>
+      <select id="autoN" class="inline-select" aria-label="Nombre de cycles">
+        <option value="2">2 cycles</option><option value="4">4 cycles</option><option value="8">8 cycles</option>
       </select>
       <span class="hint" id="autoInfo"></span>
     </div>
-    <div class="auto"><label><input type="checkbox" id="vary"> Varier en jouant : au même rythme, une piste active change de variante</label></div>
+    <label class="check"><input type="checkbox" id="vary"> Varier en jouant : au même rythme, un instrument change de rythme</label>
   </section>
 
-  <section class="tracks" id="tracks"></section>
+  <section class="opts">
+    <div class="card">
+      <div class="lab"><span>Harmonie</span><span id="keyName"></span></div>
+      <select id="prog" class="full-select" aria-label="Grille d'accords"></select>
+      <p class="hint">La basse et le piano suivent la grille et la tonalité choisies dans la barre du bas.</p>
+    </div>
+    <div class="card">
+      <div class="lab"><span>Trouve le 1</span></div>
+      <div class="seg" id="danceSeg"><button data-v="on1">On1</button><button data-v="on2">On2</button></div>
+      <div class="seg" id="countSeg"><button data-v="off">Sans compte</button><button data-v="clic">Clic</button><button data-v="voix">Voix</button></div>
+      <div class="row"><span class="hint">Langue de la voix</span>
+        <select id="lang" class="inline-select" aria-label="Langue">
+          <option value="fr">Français</option><option value="es">Español</option><option value="en">English</option>
+        </select>
+      </div>
+    </div>
+  </section>
 
   <footer>
-    <p>Un cycle = 2 mesures = un tour de clave, compté 1 à 8 comme sur la piste de danse (4 et 8 sont les pauses du pas « on 1 »). Les cases de chaque piste représentent les 16 croches du cycle ; les plus vives sont les coups accentués.</p>
-    <p>Pas de son sur iPhone ? Désactive le mode silencieux (bouton sur le côté) et monte le volume, puis relance la lecture.</p>
+    <p>Un cycle = 2 mesures = un tour de clave, compté de 1 à 8 comme sur la piste de danse. En On1 on casse sur le 1 et le 5, en On2 sur le 2 et le 6 : ces temps sont cerclés dans le compte. Les points jaunes montrent les coups de clave.</p>
+    <p>La voix utilise la synthèse vocale de ton téléphone ; à tempo rapide, préfère le clic, plus précis. Pas de son sur iPhone ? Désactive le mode silencieux et relance la lecture.</p>
   </footer>
+</div>
+
+<div class="dock">
+  <div class="dock-in">
+    <div class="count" id="count" aria-label="Compte de 1 à 8"></div>
+    <div class="ctrls">
+      <button class="pick" id="countBtn"><small>Compte</small><b id="countVal">Off</b></button>
+      <label class="pick"><small>Tonalité</small><b id="keyVal">Do</b><select id="key" aria-label="Tonalité"></select></label>
+      <label class="pick"><small>Tempo</small><b id="bpmVal">170</b><select id="bpm" aria-label="Tempo en BPM"></select></label>
+      <button class="pick" id="claveBtn"><small>Clave</small><b id="claveVal">3-2</b></button>
+      <button class="play" id="play" aria-label="Lecture"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <button class="scrim" id="scrim" aria-label="Fermer"></button>
+  <div class="panel" id="panel" role="dialog" aria-modal="true"></div>
 </div>
 
 <script>
@@ -237,107 +246,146 @@ footer p { margin: 0; max-width: 65ch; }
   "use strict";
 
   // ---------- State ----------
-  const state = { bpm: 170, clave: "32", on: {}, vol: {}, var: {}, auto: false, autoN: 4, randAdd: true, vary: false };
-  const STORE = "salsa-pistes-v2";
-  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE) || "{}")); } catch (e) {}
+  const STORE = "salsa-pistes-v3";
+  const state = { bpm: 170, clave: "32", on: { clave: true }, vol: {}, var: {}, auto: false, autoN: 4, randAdd: true, vary: false,
+                  key: 0, prog: 0, dance: "on1", count: "off", lang: "fr" };
+  try { const sv = JSON.parse(localStorage.getItem(STORE) || "null"); if (sv) Object.assign(state, sv); } catch (e) {}
   const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
+  let solo = null;
 
-  // ---------- Patterns (16 eighth notes = one clave cycle, written in 3-2) ----------
-  const rot = (s) => state.clave === "23" ? (s + 8) % 16 : s;
-  // Helpers: a 16-step array of kinds -> hit function
-  const seq = (arr, vel, clave) => s => { const k = arr[clave ? rot(s) : s]; return k ? { k, v: vel(k, s) } : null; };
-  const twice = a => a.concat(a);
-  const set = (steps, clave, acc) => s => steps.includes(clave ? rot(s) : s) ? { v: acc && !acc.includes(clave ? rot(s) : s) ? .55 : 1 } : null;
-  const notes = (map, v) => s => map[s] ? { n: map[s], v: v ? v(s) : 1 } : null;
-  const bassMap = map => s => map[s] ? { n: map[s][0], len: map[s][1], v: map[s][2] || 1 } : null;
-
+  // ---------- Rhythm helpers (16 eighth notes = one clave cycle, clave-bound parts written in 3-2) ----------
+  const rot = s => state.clave === "23" ? (s + 8) % 16 : s;
+  const _ = null;
+  const seq = (arr, vel, clave) => s => { const i = clave ? rot(s) : s; const k = arr[i % arr.length]; return k ? { k, v: vel(k, i) } : null; };
+  const set = (steps, clave) => s => steps.includes(clave ? rot(s) : s) ? { v: 1 } : null;
   const congaV = k => k === "open" || k === "slap" || k === "tumba" ? 1 : .5;
   const bongoV = k => k === "open" ? 1 : k === "idx" ? .7 : .4;
   const bellV = k => k === "low" ? 1 : .6;
   const guiroV = (k, s) => k === "long" ? 1 : s % 2 ? .5 : .75;
-  const _ = null;
 
-  // Chords used by the piano (C, F, G)
-  const C = [60, 64, 67, 72], F = [60, 65, 69, 72], G = [59, 62, 67, 71];
+  // ---------- Harmony ----------
+  const KEYS = ["Do", "Ré♭", "Ré", "Mi♭", "Mi", "Fa", "Fa♯", "Sol", "La♭", "La", "Si♭", "Si"];
+  const QUAL = { M: [0, 4, 7, 12], m: [0, 3, 7, 12], "7": [0, 4, 7, 10] };
+  const CH = { I: [0, "M"], ii: [2, "m"], IV: [5, "M"], V: [7, "M"], V7: [7, "7"], vi: [9, "m"], i: [0, "m"], iv: [5, "m"], bVI: [8, "M"], bVII: [10, "M"] };
+  const PROGS = [
+    { name: "I – IV – V – IV", ch: ["I", "IV", "V", "IV"] },
+    { name: "I – V7 (son montuno)", ch: ["I", "I", "V7", "V7"] },
+    { name: "I – vi – ii – V7", ch: ["I", "vi", "ii", "V7"] },
+    { name: "ii – V7 – I", ch: ["ii", "V7", "I", "I"] },
+    { name: "i – iv – V7 – iv (mineur)", ch: ["i", "iv", "V7", "iv"] },
+    { name: "i – ♭VII – ♭VI – V7 (mineur)", ch: ["i", "bVII", "bVI", "V7"] },
+  ];
+  // One chord every 2 beats (4 eighths); the piano and bass anticipate the next one on the "and"
+  const chordAt = slot => { const p = PROGS[state.prog].ch; const [r, q] = CH[p[((slot % p.length) + p.length) % p.length]]; return { r, q: QUAL[q] }; };
+  const wrap = (x, lo) => lo + (((x - lo) % 12) + 12) % 12;
+  const pnote = (c, ti, oct) => wrap(state.key + c.r + c.q[ti], 57) + 12 * oct;
+  const bnote = (c, t) => { const r = wrap(state.key + c.r, 36); return t === "5" ? r - 5 : t === "8" ? r + 12 : r; };
+  const piano = (cell, vel) => (s, N = s) => { const e = cell[s % 8]; if (!e) return null; const c = chordAt(Math.floor(N / 4) + e[0]); return { n: e[1].map(([ti, o]) => pnote(c, ti, o)), v: vel(s) }; };
+  const bass = cell => (s, N = s) => { const e = cell[s % 8]; if (!e) return null; const c = chordAt(Math.floor(N / 4) + e[0]); return { n: bnote(c, e[1]), len: e[2], v: e[3] || 1 }; };
+  const TRI = [[0, 0], [1, 0], [2, 0]], TRI8 = [[0, 0], [1, 0], [2, 0], [0, 1]];
 
+  // ---------- Icons ----------
+  const ICONS = {
+    clave: `<svg viewBox="0 0 64 64"><g transform="rotate(-38 32 32)"><rect x="8" y="28" width="48" height="8" rx="4" fill="#e7a23a"/><rect x="8" y="28" width="48" height="3" rx="1.5" fill="#f6c766"/></g><g transform="rotate(38 32 32)"><rect x="8" y="28" width="48" height="8" rx="4" fill="#d38b25"/><rect x="8" y="28" width="48" height="3" rx="1.5" fill="#f0b850"/></g></svg>`,
+    congas: `<svg viewBox="0 0 64 64"><path d="M6 15h22l-3 40H9z" fill="#d6452f"/><path d="M8 26h18M9 44h16" stroke="#f0c9a0" stroke-width="2"/><ellipse cx="17" cy="15" rx="11" ry="4" fill="#f3e2c3"/><path d="M34 11h24l-3.5 44h-17z" fill="#ef5a3c"/><path d="M36 24h20M37 44h18" stroke="#f0c9a0" stroke-width="2"/><ellipse cx="46" cy="11" rx="12" ry="4.2" fill="#fbecd2"/></svg>`,
+    bongo: `<svg viewBox="0 0 64 64"><rect x="26" y="31" width="12" height="5" rx="2" fill="#8a5a33"/><path d="M4 26h24l-3 18H7z" fill="#a86a39"/><path d="M5 33h22" stroke="#e9cfa6" stroke-width="2"/><ellipse cx="16" cy="26" rx="12" ry="4" fill="#f3e2c3"/><path d="M36 23h26l-3 22H39z" fill="#c07b42"/><path d="M37 31h24" stroke="#e9cfa6" stroke-width="2"/><ellipse cx="49" cy="23" rx="13" ry="4.3" fill="#fbecd2"/></svg>`,
+    campana: `<svg viewBox="0 0 64 64"><path d="M24 8h16l6 36H18z" fill="#e9c23f"/><path d="M26 8h5l-4 36h-6z" fill="#f7dc77"/><rect x="28" y="3" width="8" height="7" rx="2" fill="#9b7d24"/><rect x="18" y="42" width="28" height="4" rx="2" fill="#b8901f"/><rect x="12" y="52" width="36" height="4" rx="2" fill="#e8d7b0" transform="rotate(-8 30 54)"/><circle cx="48" cy="51" r="3.5" fill="#e8d7b0"/></svg>`,
+    guiro: `<svg viewBox="0 0 64 64"><g transform="rotate(-20 30 34)"><rect x="18" y="8" width="22" height="50" rx="11" fill="#e3a63c"/><g stroke="#a86f1c" stroke-width="2.2" stroke-linecap="round"><path d="M21 18h16M20 23h18M20 28h18M20 33h18M20 38h18M20 43h18M21 48h16"/></g></g><rect x="40" y="12" width="4" height="40" rx="2" fill="#efe1b8" transform="rotate(28 42 32)"/></svg>`,
+    maracas: `<svg viewBox="0 0 64 64"><rect x="33" y="32" width="6" height="26" rx="3" fill="#b8402c" transform="rotate(28 36 45)"/><circle cx="27" cy="22" r="13" fill="#f2a43a"/><path d="M16 20c6 4 16 4 22 0" stroke="#3aa37a" stroke-width="3" fill="none"/><rect x="40" y="34" width="6" height="24" rx="3" fill="#a4382a" transform="rotate(-18 43 46)"/><circle cx="44" cy="25" r="11" fill="#e9862f"/><path d="M35 27c4 3 13 3 18 0" stroke="#f6d34a" stroke-width="3" fill="none"/></svg>`,
+    cascara: `<svg viewBox="0 0 64 64"><path d="M32 30v28M32 44l-14 14M32 44l14 14" stroke="#9aa3ab" stroke-width="2.5"/><rect x="5" y="18" width="24" height="14" rx="2" fill="#c8d0d6"/><rect x="5" y="18" width="24" height="4" fill="#e9eef1"/><ellipse cx="17" cy="18" rx="12" ry="3" fill="#f4f1ea"/><rect x="34" y="16" width="26" height="15" rx="2" fill="#b4bcc3"/><rect x="34" y="16" width="26" height="4" fill="#dfe5e9"/><ellipse cx="47" cy="16" rx="13" ry="3.2" fill="#f4f1ea"/><path d="M30 6v14" stroke="#9aa3ab" stroke-width="2.5"/><path d="M24 4h12l2 8H22z" fill="#e9c23f"/></svg>`,
+    bajo: `<svg viewBox="0 0 64 64"><g transform="rotate(-24 32 34)"><rect x="30" y="2" width="4" height="30" rx="2" fill="#5a3a22"/><circle cx="32" cy="4" r="3.2" fill="#5a3a22"/><path d="M32 22c-8 0-11 6-9 11 1 3-1 4-3 6-4 5-2 19 12 19s16-14 12-19c-2-2-4-3-3-6 2-5-1-11-9-11z" fill="#d4874a"/><path d="M28 36c-2 1-2 3 0 4M36 36c2 1 2 3 0 4" stroke="#6a3c1c" stroke-width="1.8" fill="none"/><path d="M31 18v34M33 18v34" stroke="#f3e2c3" stroke-width=".9"/><rect x="28" y="50" width="8" height="3" rx="1" fill="#3a2414"/></g></svg>`,
+    piano: `<svg viewBox="0 0 64 64"><rect x="4" y="14" width="56" height="38" rx="4" fill="#f6f1e8"/><g stroke="#c9bfae" stroke-width="1.4"><path d="M12 14v38M20 14v38M28 14v38M36 14v38M44 14v38M52 14v38"/></g><g fill="#1c1512"><rect x="9" y="14" width="6" height="22" rx="1"/><rect x="17" y="14" width="6" height="22" rx="1"/><rect x="33" y="14" width="6" height="22" rx="1"/><rect x="41" y="14" width="6" height="22" rx="1"/><rect x="49" y="14" width="6" height="22" rx="1"/></g></svg>`,
+  };
+  const SPK_ON = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9.5h4l5-4.5v14l-5-4.5H3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+  const SPK_OFF = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9.5h4l5-4.5v14l-5-4.5H3z"/><path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+
+  // ---------- Instruments and their rhythms ----------
   const TRACKS = [
-    { id: "clave", name: "Clave", color: "#f5b82e", role: "Deux bâtons de bois. Le patron rythmique de tout l'orchestre.",
+    { id: "clave", name: "Clave", color: "#f5b82e", role: "Le patron rythmique de tout l'orchestre.",
       tip: "Tout le reste se cale dessus. Tape-la dans tes mains avant d'ajouter la suite.",
       variants: [
-        { name: "Son", hit: set([0, 3, 6, 10, 12], true) },
-        { name: "Rumba", hit: set([0, 3, 7, 10, 12], true) },
-        { name: "Son + bloc", hit: s => [0, 3, 6, 10, 12].includes(rot(s)) ? { v: 1 } : (s % 4 === 0 ? { v: .3 } : null) },
+        { name: "Son", d: "La clave de la salsa", hit: set([0, 3, 6, 10, 12], true) },
+        { name: "Rumba", d: "3e coup retardé, plus tendu", hit: set([0, 3, 7, 10, 12], true) },
+        { name: "Son + bloc", d: "Avec un bloc discret sur 1, 3, 5, 7", hit: s => [0, 3, 6, 10, 12].includes(rot(s)) ? { v: 1 } : (s % 4 === 0 ? { v: .3 } : null) },
       ] },
-    { id: "congas", name: "Congas", color: "#ff6b4a", role: "Le tumbao : talon, pointe, claqué, puis les tons ouverts.",
-      tip: "Les coups ouverts sur 4 et 4& (et 8, 8&) sont le moteur du groove.",
+    { id: "congas", name: "Congas", color: "#ff6b4a", role: "Le tumbao : talon, pointe, claqué, tons ouverts.",
+      tip: "Les tons ouverts sur 4 et 4& (et 8, 8&) sont le moteur du groove.",
       variants: [
-        { name: "Tumbao", hit: seq(["heel","tip","slap","tip","heel","tip","open","open","heel","tip","slap","tip","heel","tip","open","tumba"], congaV) },
-        { name: "Deux tambours", hit: seq(["heel","tip","slap","tip","heel","tip","open","open","heel","tip","slap","tip","heel","tip","tumba","tumba"], congaV) },
-        { name: "Bombo", hit: seq(["heel","tip","slap","tumba","heel","tip","open","open","heel","tip","slap","tip","heel","slap","open","tumba"], congaV) },
+        { name: "Tumbao simple", d: "Juste les deux tons ouverts", hit: seq([_, _, _, _, _, _, "open", "open"], congaV) },
+        { name: "Tumbao", d: "Talon, pointe, claqué, ouverts", hit: seq(["heel", "tip", "slap", "tip", "heel", "tip", "open", "open", "heel", "tip", "slap", "tip", "heel", "tip", "open", "tumba"], congaV) },
+        { name: "Tumbao 2 congas", d: "Réponse sur la tumbadora grave", hit: seq(["heel", "tip", "slap", "tip", "heel", "tip", "open", "open", "heel", "tip", "slap", "tip", "heel", "tip", "tumba", "tumba"], congaV) },
+        { name: "Bombo", d: "Tumba sur le 2&, plus de claqués", hit: seq(["heel", "tip", "slap", "tumba", "heel", "tip", "open", "open", "heel", "tip", "slap", "tip", "heel", "slap", "open", "tumba"], congaV) },
+        { name: "Guaguancó", d: "Couleur rumba, suit la clave", hit: seq(["heel", "tip", "slap", "tip", "heel", "tip", "open", "open", "heel", "tip", "slap", "tumba", "heel", "tumba", "open", "open"], congaV, true) },
+        { name: "Caballo", d: "Le galop : claqués et tons enchaînés", hit: seq(["slap", _, "open", "open", "slap", _, "tumba", "tumba"], congaV) },
       ] },
-    { id: "bongo", name: "Bongó", color: "#ff9d5c", role: "Le martillo : un flot continu de croches, ouvert sur le 4.",
+    { id: "bongo", name: "Bongó", color: "#ff9d5c", role: "Le martillo : un flot de croches, ouvert sur le 4.",
       tip: "Il remplit l'espace entre les coups de conga, très léger sauf sur les tons ouverts.",
       variants: [
-        { name: "Martillo", hit: seq(twice(["idx","thumb","idx","heel","idx","thumb","open","heel"]), bongoV) },
-        { name: "Ouvert", hit: seq(twice(["idx","thumb","idx","heel","idx","thumb","open","open"]), bongoV) },
-        { name: "Repique", hit: seq(["idx","thumb","idx","heel","idx","thumb","open","heel","idx","idx","idx","idx","open","heel","open","open"], bongoV) },
+        { name: "Martillo simple", d: "Temps et ton ouvert sur le 4", hit: seq(["idx", _, "idx", _, "idx", _, "open", _], bongoV) },
+        { name: "Martillo", d: "Toutes les croches", hit: seq(["idx", "thumb", "idx", "heel", "idx", "thumb", "open", "heel"], bongoV) },
+        { name: "Martillo ouvert", d: "Deux tons ouverts en fin de mesure", hit: seq(["idx", "thumb", "idx", "heel", "idx", "thumb", "open", "open"], bongoV) },
+        { name: "Repique", d: "Petit roulement dans la 2e mesure", hit: seq(["idx", "thumb", "idx", "heel", "idx", "thumb", "open", "heel", "idx", "idx", "idx", "idx", "open", "heel", "open", "open"], bongoV) },
       ] },
-    { id: "campana", name: "Campana", color: "#e8e2c4", role: "La cloche du bongosero : grave sur les temps, aiguë entre.",
-      tip: "Elle arrive au moment du « mambo » pour pousser l'énergie.",
+    { id: "campana", name: "Campana", color: "#f0d46a", role: "La cloche du bongosero, pour le mambo.",
+      tip: "Grave sur les temps, aiguë entre. Elle pousse l'énergie dans les passages forts.",
       variants: [
-        { name: "Classique", hit: seq(twice(["low",_,"high","high","low",_,"high","high"]), bellV) },
-        { name: "Noires", hit: seq(twice(["low",_,"high",_,"low",_,"high",_]), bellV) },
-        { name: "Mambo", hit: seq(twice(["low",_,"high","high","low","high",_,"high"]), bellV) },
+        { name: "Classique", d: "Grave sur 1 et 3, aiguë entre", hit: seq(["low", _, "high", "high", "low", _, "high", "high"], bellV) },
+        { name: "Noires", d: "Un coup par temps", hit: seq(["low", _, "high", _, "low", _, "high", _], bellV) },
+        { name: "Mambo", d: "Plus syncopée", hit: seq(["low", _, "high", "high", "low", "high", _, "high"], bellV) },
       ] },
     { id: "guiro", name: "Güiro", color: "#a3d66e", role: "Calebasse grattée : longs et courts.",
       tip: "Le frottement long ouvre la demi-mesure ; les courts relancent.",
       variants: [
-        { name: "Long-court-court", hit: seq(twice(["long",_,"short","short","long",_,"short","short"]), guiroV) },
-        { name: "Croches", hit: seq(twice(["long",_,"short","short","short","short","short","short"]), guiroV) },
-        { name: "Cha-cha", hit: seq(twice(["long",_,"long",_,"long",_,"short","short"]), guiroV) },
+        { name: "Simple", d: "Un long sur 1 et 3", hit: seq(["long", _, _, _, "long", _, _, _], guiroV) },
+        { name: "Long-court-court", d: "Le classique", hit: seq(["long", _, "short", "short", "long", _, "short", "short"], guiroV) },
+        { name: "Croches", d: "Plus dense", hit: seq(["long", _, "short", "short", "short", "short", "short", "short"], guiroV) },
+        { name: "Cha-cha", d: "Longs sur les temps", hit: seq(["long", _, "long", _, "long", _, "short", "short"], guiroV) },
       ] },
     { id: "maracas", name: "Maracas", color: "#6fd3c1", role: "Une couche de brillance régulière.",
       tip: "Change l'accent pour sentir le temps ou le contretemps.",
       variants: [
-        { name: "Sur le temps", hit: s => ({ v: s % 2 === 0 ? 1 : .45 }) },
-        { name: "Contretemps", hit: s => ({ v: s % 2 ? 1 : .4 }) },
-        { name: "Noires", hit: s => s % 2 === 0 ? { v: 1 } : null },
+        { name: "Sur le temps", d: "Croches, accent sur les temps", hit: s => ({ v: s % 2 === 0 ? 1 : .45 }) },
+        { name: "Contretemps", d: "Croches, accent entre les temps", hit: s => ({ v: s % 2 ? 1 : .4 }) },
+        { name: "Noires", d: "Un coup par temps", hit: s => s % 2 === 0 ? { v: 1 } : null },
       ] },
-    { id: "cascara", name: "Timbales", color: "#86b6ff", role: "Le timbalero : coque, cloche et coups de timbal.",
+    { id: "cascara", name: "Timbales", color: "#86b6ff", role: "Le timbalero : coque, cloches, coups de timbal.",
       tip: "Ses accents suivent la clave : écoute-les tomber avec elle.",
       variants: [
-        { name: "Cáscara", hit: s => { const r = rot(s); const v = { 0: 1, 2: .55, 3: 1, 5: .55, 6: 1, 8: .55, 10: 1, 12: 1, 13: .55, 15: .55 }[r]; return v ? { k: "shell", v } : null; } },
-        { name: "Cáscara + golpe", hit: s => { const r = rot(s); if (s === 14) return { k: "timbal", v: 1 }; const v = { 0: 1, 2: .55, 3: 1, 5: .55, 6: 1, 8: .55, 10: 1, 12: 1, 13: .55, 15: .55 }[r]; return v ? { k: "shell", v } : null; } },
-        { name: "Cloche cha-cha", hit: s => s % 2 === 0 ? { k: "bell", v: s % 4 === 0 ? 1 : .6 } : null },
+        { name: "Cáscara", d: "Sur la coque, suit la clave", hit: s => { const v = { 0: 1, 2: .55, 3: 1, 5: .55, 6: 1, 8: .55, 10: 1, 12: 1, 13: .55, 15: .55 }[rot(s)]; return v ? { k: "shell", v } : null; } },
+        { name: "Cáscara + golpe", d: "Avec le coup de timbal sur le 8", hit: s => { if (s === 14) return { k: "timbal", v: 1 }; const v = { 0: 1, 2: .55, 3: 1, 5: .55, 6: 1, 8: .55, 10: 1, 12: 1, 13: .55, 15: .55 }[rot(s)]; return v ? { k: "shell", v } : null; } },
+        { name: "Paila doble", d: "Toutes les croches, accents de cáscara", hit: s => ({ k: "shell", v: [0, 3, 6, 10, 12].includes(rot(s)) ? 1 : .4 }) },
+        { name: "Cloche cha-cha", d: "La petite cloche sur les temps", hit: s => s % 2 === 0 ? { k: "bell", v: s % 4 === 0 ? 1 : .6 } : null },
+        { name: "Cloche mambo", d: "Pour les passages forts", hit: s => { const r = rot(s); return [0, 2, 4, 6, 7, 9, 10, 12, 13, 15].includes(r) ? { k: "bell", v: [0, 4, 7, 10, 13].includes(r) ? 1 : .55 } : null; } },
       ] },
-    { id: "bajo", name: "Bajo", color: "#c99dff", role: "Le tumbao de basse : souvent rien sur le 1.",
-      tip: "La basse anticipe l'accord suivant. Le 1 vide, c'est ce qui fait flotter la salsa.",
+    { id: "bajo", name: "Basse", color: "#c99dff", role: "Le tumbao de basse, qui anticipe les accords.",
+      tip: "La basse joue l'accord suivant avant qu'il arrive. Le 1 vide, c'est ce qui fait flotter la salsa.",
       variants: [
-        { name: "Tumbao", hit: bassMap({ 3: [41, 3], 6: [43, 5], 11: [41, 3], 14: [48, 5] }) },
-        { name: "Octaves", hit: bassMap({ 3: [41, 2], 5: [53, 1, .6], 6: [43, 5], 11: [41, 2], 13: [53, 1, .6], 14: [48, 5] }) },
-        { name: "Son", hit: bassMap({ 0: [36, 2], 3: [41, 3], 6: [43, 2], 8: [43, 2], 11: [41, 3], 14: [48, 2] }) },
+        { name: "Temps forts", d: "Fondamentale sur 1 et 3, pour débuter", hit: bass({ 0: [0, "R", 4], 4: [0, "R", 4] }) },
+        { name: "Tumbao", d: "2& et 4, jamais sur le 1", hit: bass({ 3: [1, "R", 3], 6: [1, "R", 5] }) },
+        { name: "Tumbao quinte", d: "Quinte sur le 2&, fondamentale sur le 4", hit: bass({ 3: [1, "5", 3], 6: [1, "R", 5] }) },
+        { name: "Octaves", d: "Avec un rebond à l'octave", hit: bass({ 3: [1, "R", 2], 5: [0, "8", 1, .6], 6: [1, "R", 5] }) },
+        { name: "Son", d: "Sur le 1, à l'ancienne", hit: bass({ 0: [0, "R", 3], 3: [1, "5", 1, .7], 4: [0, "R", 2], 6: [0, "5", 2] }) },
       ] },
-    { id: "piano", name: "Piano", color: "#ff8fc0", role: "Le montuno sur Do, Fa, Sol, Fa.",
-      tip: "Il évite les temps forts et joue à contretemps, en dialogue avec la clave.",
+    { id: "piano", name: "Piano", color: "#ff8fc0", role: "Le montuno, en dialogue avec la clave.",
+      tip: "Il évite les temps forts et anticipe les accords sur le contretemps.",
       variants: [
-        { name: "Montuno", hit: notes({ 1: [52, 60, 64], 2: [55, 64, 67], 3: [57, 65, 69], 5: [60, 69, 72], 6: [57, 65, 69],
-            7: [59, 67, 71], 9: [62, 71, 74], 10: [59, 67, 71], 11: [57, 65, 69], 13: [60, 69, 72], 14: [53, 57, 65], 15: [55, 64, 67] }, s => s % 2 ? 1 : .75) },
-        { name: "Accords", hit: notes({ 1: C, 3: F, 5: F, 7: G, 9: G, 11: F, 13: F, 15: C }, s => s % 4 === 3 ? 1 : .7) },
-        { name: "Arpège", hit: notes({ 0: [48, 60], 1: [64, 67], 2: [55, 67], 3: [57, 65, 69], 4: [53, 65], 5: [69, 72], 6: [60, 72],
-            7: [59, 67, 71], 8: [55, 67], 9: [71, 74], 10: [62, 74], 11: [57, 65, 69], 12: [53, 65], 13: [69, 72], 14: [57, 69], 15: [55, 64, 67] }, s => s % 2 ? 1 : .6) },
+        { name: "Montuno", d: "Motif en octaves, à contretemps", hit: piano({ 1: [0, [[1, 0], [2, 0], [1, 1]]], 2: [0, [[2, 0], [0, 1], [2, 1]]], 3: [1, [[1, 0], [2, 0], [1, 1]]], 5: [0, [[0, 0], [1, 0], [0, 1]]], 6: [0, [[1, 0], [2, 0], [1, 1]]], 7: [1, [[2, 0], [0, 1], [2, 1]]] }, s => s % 2 ? 1 : .75) },
+        { name: "Accords", d: "Plaqués sur les contretemps", hit: piano({ 1: [0, TRI8], 3: [1, TRI8], 5: [0, TRI8], 7: [1, TRI8] }, s => s % 4 === 3 ? 1 : .7) },
+        { name: "Triades", d: "Rythme 3-3-2 (tresillo)", hit: piano({ 0: [0, TRI], 3: [1, TRI], 6: [1, TRI] }, () => .9) },
+        { name: "Octaves", d: "Mélodie simple à deux mains", hit: piano({ 1: [0, [[1, 0], [1, 1]]], 2: [0, [[2, 0], [2, 1]]], 3: [1, [[0, 0], [0, 1]]], 5: [0, [[2, 0], [2, 1]]], 6: [0, [[1, 0], [1, 1]]], 7: [1, [[1, 0], [1, 1]]] }, s => s % 2 ? 1 : .7) },
+        { name: "Arpège", d: "Toutes les croches", hit: piano({ 0: [0, [[0, -1], [0, 0]]], 1: [0, [[1, 0], [2, 0]]], 2: [0, [[2, -1], [2, 0]]], 3: [1, [[1, 0], [2, 0], [0, 1]]], 4: [0, [[0, -1], [0, 0]]], 5: [0, [[2, 0], [0, 1]]], 6: [0, [[0, 0], [0, 1]]], 7: [1, [[1, 0], [2, 0], [1, 1]]] }, s => s % 2 ? 1 : .6) },
       ] },
   ];
-  state.var = state.var || {};
   TRACKS.forEach(t => {
-    if (!(state.var[t.id] < t.variants.length)) state.var[t.id] = 0;
-    t.hit = s => t.variants[state.var[t.id]].hit(s);
+    if (state.vol[t.id] == null) state.vol[t.id] = 0.8;
+    if (!(state.var[t.id] < t.variants.length)) state.var[t.id] = t.id === "congas" || t.id === "bajo" ? 1 : 0;
+    t.hit = (s, N) => t.variants[state.var[t.id]].hit(s, N);
   });
   const randVariant = (t, different) => {
     let v; do { v = Math.floor(Math.random() * t.variants.length); } while (different && t.variants.length > 1 && v === state.var[t.id]);
     state.var[t.id] = v;
   };
-  if (!Object.keys(state.on).length) state.on = { clave: true };
-  TRACKS.forEach(t => { if (state.vol[t.id] == null) state.vol[t.id] = 0.8; });
+  const audible = id => solo ? id === solo : !!state.on[id];
 
   // ---------- Audio ----------
   // Modal synthesis: each instrument = a few resonant partials + a strike transient,
@@ -617,6 +665,34 @@ footer p { margin: 0; max-width: 65ch; }
   // Per-instrument feel: congas sit a hair behind, bongó a hair ahead (ms)
   const FEEL = { clave: 0, congas: 0.004, bongo: -0.002, campana: 0, guiro: 0.002, maracas: -0.001, cascara: 0, bajo: 0.003, piano: -0.002 };
 
+  let countBus = null;
+  function click(t, strong, key) {
+    const f = strong ? 2100 : key ? 1600 : 1250, g = strong ? 0.6 : key ? 0.45 : 0.25;
+    partial(countBus, t, f, g, 0.05);
+    partial(countBus, t, f * 2.4, g * 0.25, 0.02);
+    burst(countBus, t, { dur: 0.004, f: 4000, q: 1, g: g * 0.5 });
+  }
+
+  // ---------- Voice count ----------
+  const LANGS = {
+    fr: { code: "fr-FR", w: ["un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit"] },
+    es: { code: "es-ES", w: ["uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho"] },
+    en: { code: "en-US", w: ["one", "two", "three", "four", "five", "six", "seven", "eight"] },
+  };
+  let voices = [];
+  const loadVoices = () => { try { voices = speechSynthesis.getVoices(); } catch (e) {} };
+  try { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; } catch (e) {}
+  function say(word, vol = 1) {
+    try {
+      const L = LANGS[state.lang], u = new SpeechSynthesisUtterance(word);
+      u.lang = L.code; u.volume = vol;
+      const v = voices.find(v => v.lang && v.lang.replace("_", "-").toLowerCase().startsWith(L.code.slice(0, 2)));
+      if (v) u.voice = v;
+      u.rate = Math.min(2.2, 1 + state.bpm / 220);
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
   // ---------- Scheduler ----------
   const stepDur = () => 60 / state.bpm / 2;
   let playing = false, timer = null, nextTime = 0, stepN = 0, cycles = 0;
@@ -625,15 +701,25 @@ footer p { margin: 0; max-width: 65ch; }
   function scheduleStep(n, t) {
     const s = n % 16;
     if (s === 0 && n > 0) onCycle();
+    const hits = [];
     TRACKS.forEach(tr => {
-      if (!state.on[tr.id]) return;
-      const h = tr.hit(s);
+      if (!audible(tr.id)) return;
+      const h = tr.hit(s, n);
       if (!h) return;
       const human = tr.id === "clave" ? 0 : FEEL[tr.id] + (Math.random() - 0.5) * 0.008;
       const hh = Object.assign({}, h, { v: Math.min(1, h.v * (0.88 + Math.random() * 0.16)) });
       PLAY[tr.id](bus[tr.id], Math.max(ctx.currentTime, t + human), hh);
+      hits.push(tr.id);
     });
-    uiQueue.push({ s, t });
+    if (s % 2 === 0) {
+      const beat = s / 2, keyBeats = state.dance === "on1" ? [0, 4] : [1, 5];
+      if (state.count === "clic") click(t, beat === keyBeats[0], keyBeats.includes(beat));
+      if (state.count === "voix" && beat !== 3 && beat !== 7) {
+        const w = LANGS[state.lang].w[beat], ms = (t - ctx.currentTime) * 1000 - 70;
+        setTimeout(() => { if (playing && state.count === "voix") say(w); }, Math.max(0, ms));
+      }
+    }
+    uiQueue.push({ s, t, hits });
   }
   function scheduler() {
     if (nextTime < ctx.currentTime - 0.2) nextTime = ctx.currentTime + 0.05;
@@ -644,21 +730,20 @@ footer p { margin: 0; max-width: 65ch; }
   }
   function onCycle() {
     cycles++;
-    if (state.vary && cycles % state.autoN === 0) {
+    const due = cycles % state.autoN === 0;
+    if (state.vary && due) {
       const act = TRACKS.filter(t => state.on[t.id]);
-      if (act.length) { randVariant(act[Math.floor(Math.random() * act.length)], true); paintPatterns(); refresh(); }
+      if (act.length) { randVariant(act[Math.floor(Math.random() * act.length)], true); save(); refresh(); }
     }
-    if (state.auto) {
-      const left = state.autoN - (cycles % state.autoN);
-      if (cycles % state.autoN === 0) { addNext(); }
-      setAutoInfo(cycles % state.autoN === 0 ? state.autoN : left);
-    }
+    if (state.auto) { if (due) addNext(); setAutoInfo(due ? state.autoN : state.autoN - (cycles % state.autoN)); }
   }
 
   let wake = null;
   async function start() {
     initAudio();
+    if (!countBus) { countBus = ctx.createGain(); countBus.gain.value = 0.7; countBus.connect(master); }
     unlockIOS();
+    if (state.count === "voix") say(" ", 0);
     if (ctx.state !== "running") await ctx.resume();
     playing = true; stepN = 0; cycles = 0; nextTime = ctx.currentTime + 0.08;
     timer = setInterval(scheduler, 25); scheduler();
@@ -669,89 +754,94 @@ footer p { margin: 0; max-width: 65ch; }
   function stop() {
     playing = false; clearInterval(timer); uiQueue.length = 0;
     try { unlockIOS.el && unlockIOS.el.pause(); } catch (e) {}
+    try { speechSynthesis.cancel(); } catch (e) {}
     try { wake && wake.release(); } catch (e) {}
     wake = null; setPlayUI(); showStep(-1); setAutoInfo();
   }
 
   // ---------- UI ----------
   const $ = id => document.getElementById(id);
-  const tracksEl = $("tracks"), countEls = [...$("count").children];
-  const cols = Array.from({ length: 16 }, () => []);
-  const trackEls = {};
+  const tiles = {};
+  const countEls = [];
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  function buildTracks() {
-    tracksEl.innerHTML = "";
-    cols.forEach(c => c.length = 0);
-    TRACKS.forEach((tr, i) => {
-      const el = document.createElement("article");
-      el.className = "track"; el.style.setProperty("--c", tr.color);
-      el.innerHTML = `
-        <div class="thead">
-          <div class="tname"><b><span class="n">${String(i + 1).padStart(2, "0")}</span>${tr.name}</b><span class="role">${tr.role}</span></div>
-          <button class="switch" role="switch" id="sw-${tr.id}" aria-label="${tr.name}"></button>
-        </div>
-        <div class="vars"><div class="chips" role="group" aria-label="Variantes ${tr.name}">${tr.variants.map((v, k) => `<button class="chip" data-k="${k}">${v.name}</button>`).join("")}</div><button class="dice" aria-label="Variante au hasard pour ${tr.name}"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.6"/><circle cx="15.5" cy="15.5" r="1.6"/><circle cx="12" cy="12" r="1.6"/></svg></button></div>
-        <div class="steps"></div>
-        <p class="tip">${tr.tip}</p>
-        <div class="tfoot"><span>Volume</span><input type="range" id="vol-${tr.id}" min="0" max="1" step="0.01" aria-label="Volume ${tr.name}"></div>`;
-      const steps = el.querySelector(".steps");
-      for (let s = 0; s < 16; s++) { const c = document.createElement("i"); steps.appendChild(c); cols[s].push(c); }
-      el.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => { state.var[tr.id] = +b.dataset.k; save(); paintPatterns(); refresh(); }));
-      el.querySelector(".dice").addEventListener("click", () => { randVariant(tr, true); save(); paintPatterns(); refresh(); });
-      el.querySelector(".switch").addEventListener("click", () => { state.on[tr.id] = !state.on[tr.id]; save(); refresh(); });
-      const vol = el.querySelector("input");
-      vol.value = state.vol[tr.id];
-      vol.addEventListener("input", () => {
-        state.vol[tr.id] = +vol.value; save();
-        if (bus[tr.id]) bus[tr.id].gain.setTargetAtTime(state.vol[tr.id] * state.vol[tr.id], ctx.currentTime, 0.02);
-      });
-      tracksEl.appendChild(el);
-      trackEls[tr.id] = { el, cells: [...steps.children], sw: el.querySelector(".switch"), chips: [...el.querySelectorAll(".chip")] };
+  function buildCount() {
+    const c = $("count"); c.innerHTML = "";
+    for (let b = 0; b < 8; b++) { const sp = document.createElement("span"); sp.textContent = b + 1; c.appendChild(sp); countEls.push(sp); }
+  }
+  function paintCount() {
+    const keyBeats = state.dance === "on1" ? [0, 4] : [1, 5];
+    const clave = TRACKS[0];
+    countEls.forEach((sp, b) => {
+      sp.classList.toggle("key", keyBeats.includes(b));
+      sp.querySelectorAll("i").forEach(i => i.remove());
+      if (clave.hit(b * 2)) sp.appendChild(document.createElement("i"));
+      if (clave.hit(b * 2 + 1)) { const i = document.createElement("i"); i.className = "b"; sp.appendChild(i); }
     });
   }
 
-  function paintPatterns() {
-    TRACKS.forEach(tr => {
-      trackEls[tr.id].cells.forEach((c, s) => {
-        const h = tr.hit(s);
-        c.className = h ? (h.v >= 0.8 ? "hit acc" : "hit") : "";
-      });
+  function buildGrid() {
+    const g = $("grid"); g.innerHTML = "";
+    TRACKS.forEach((tr, i) => {
+      const el = document.createElement("div");
+      el.className = "tile"; el.style.setProperty("--c", tr.color);
+      el.innerHTML = `
+        <button class="open" aria-label="Choisir le rythme : ${tr.name}">
+          <span class="num">${i + 1}</span>
+          <span class="ico">${ICONS[tr.id]}</span>
+          <span class="tn">${tr.name}</span>
+          <span class="tv"></span>
+        </button>
+        <button class="spk" aria-label="Activer ou couper ${tr.name}"></button>
+        <span class="solo-badge" hidden>SOLO</span>`;
+      el.querySelector(".open").addEventListener("click", () => openSheet(tr.id));
+      el.querySelector(".spk").addEventListener("click", () => { state.on[tr.id] = !state.on[tr.id]; if (solo && !state.on[tr.id] && solo === tr.id) solo = null; save(); refresh(); });
+      g.appendChild(el);
+      tiles[tr.id] = { el, ico: el.querySelector(".ico"), tv: el.querySelector(".tv"), spk: el.querySelector(".spk"), badge: el.querySelector(".solo-badge") };
     });
-    const cm = $("clavemarks"); cm.innerHTML = "";
-    for (let s = 0; s < 16; s++) { const i = document.createElement("i"); if (TRACKS[0].hit(s)) i.className = "hit"; cm.appendChild(i); }
   }
 
   function refresh() {
     const firstOff = TRACKS.findIndex(t => !state.on[t.id]);
     TRACKS.forEach((tr, i) => {
-      const on = !!state.on[tr.id], te = trackEls[tr.id];
-      te.sw.setAttribute("aria-checked", on);
-      te.chips.forEach((b, k) => b.setAttribute("aria-pressed", k === state.var[tr.id]));
-      te.el.classList.toggle("on", on);
-      te.el.classList.toggle("off", !on && i !== firstOff);
-      te.el.classList.toggle("next", !on && i === firstOff);
+      const on = !!state.on[tr.id], t = tiles[tr.id];
+      t.el.classList.toggle("on", on && (!solo || solo === tr.id));
+      t.el.classList.toggle("off", !on && i !== firstOff);
+      t.el.classList.toggle("next", !on && i === firstOff);
+      t.el.classList.toggle("muted-by-solo", !!solo && solo !== tr.id);
+      t.tv.textContent = tr.variants[state.var[tr.id]].name;
+      t.spk.innerHTML = on ? SPK_ON : SPK_OFF;
+      t.spk.setAttribute("aria-pressed", on);
+      t.badge.hidden = solo !== tr.id;
     });
     const n = TRACKS.filter(t => state.on[t.id]).length;
     $("level").textContent = `${n} / ${TRACKS.length} pistes`;
-    $("cycle").textContent = `clave ${state.clave === "32" ? "3-2" : "2-3"}`;
     $("addNext").disabled = firstOff === -1;
+    $("nextName").textContent = firstOff === -1 ? "Orchestre complet" : TRACKS[firstOff].name;
     $("removeLast").disabled = n === 0;
-    $("nextName").textContent = firstOff === -1 ? "Orchestre complet" : `Suivante : ${TRACKS[firstOff].name}`;
-    $("c32").setAttribute("aria-pressed", state.clave === "32");
-    $("c23").setAttribute("aria-pressed", state.clave === "23");
     $("bpmVal").textContent = state.bpm; $("bpm").value = state.bpm;
-    $("tempoName").textContent = state.bpm < 140 ? "Pour apprendre" : state.bpm < 165 ? "Lente" : state.bpm < 195 ? "Classique" : "Rapide";
+    $("keyVal").textContent = KEYS[state.key]; $("key").value = state.key;
+    $("keyName").textContent = `en ${KEYS[state.key]}${PROGS[state.prog].ch[0] === "i" ? " mineur" : " majeur"}`;
+    $("prog").value = state.prog;
+    $("claveVal").textContent = state.clave === "32" ? "3-2" : "2-3";
+    $("countVal").textContent = { off: "Off", clic: "Clic", voix: "Voix" }[state.count];
+    $("countBtn").classList.toggle("lit", state.count !== "off");
+    document.querySelectorAll("#danceSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.dance));
+    document.querySelectorAll("#countSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.count));
+    $("lang").value = state.lang;
     $("auto").checked = state.auto; $("autoN").value = state.autoN;
     $("randAdd").checked = state.randAdd; $("vary").checked = state.vary;
+    paintCount();
+    if (sheetId) renderSheet();
   }
 
   function addNext() {
     const t = TRACKS.find(t => !state.on[t.id]);
-    if (t) { if (state.randAdd) { randVariant(t); paintPatterns(); } state.on[t.id] = true; save(); refresh(); }
+    if (t) { if (state.randAdd) randVariant(t); state.on[t.id] = true; save(); refresh(); }
   }
   function removeLast() {
     const on = TRACKS.filter(t => state.on[t.id]);
-    if (on.length) { state.on[on[on.length - 1].id] = false; save(); refresh(); }
+    if (on.length) { const id = on[on.length - 1].id; state.on[id] = false; if (solo === id) solo = null; save(); refresh(); }
   }
   function setAutoInfo(left) {
     const el = $("autoInfo");
@@ -759,21 +849,63 @@ footer p { margin: 0; max-width: 65ch; }
     el.textContent = `prochaine dans ${left} cycle${left > 1 ? "s" : ""}`;
   }
 
+  // ---------- Instrument sheet ----------
+  let sheetId = null, sheetCells = [];
+  function openSheet(id) { sheetId = id; renderSheet(); $("sheet").hidden = false; }
+  function closeSheet() { sheetId = null; sheetCells = []; $("sheet").hidden = true; }
+  function renderSheet() {
+    const tr = TRACKS.find(t => t.id === sheetId), p = $("panel");
+    const scroll = p.scrollTop;
+    p.style.setProperty("--c", tr.color);
+    p.innerHTML = `
+      <div class="grab"></div>
+      <div class="panel-in">
+        <div class="ph"><span class="ico">${ICONS[tr.id]}</span><div><h2>${tr.name}</h2><p>${tr.role}</p></div><button class="x" id="sx" aria-label="Fermer">×</button></div>
+        <div class="row">
+          <button class="switch" role="switch" id="sOn" aria-checked="${!!state.on[tr.id]}" aria-label="Activer ${tr.name}"></button>
+          <span>${state.on[tr.id] ? "Activé" : "Coupé"}</span>
+          <span style="flex:1"></span>
+          <button class="btn" id="sSolo" aria-pressed="${solo === tr.id}">Isoler</button>
+          <button class="btn" id="sDice">Hasard</button>
+        </div>
+        <div class="vol"><span>Volume</span><input type="range" id="sVol" min="0" max="1" step="0.01" value="${state.vol[tr.id]}" aria-label="Volume ${tr.name}"></div>
+        <div class="steps" id="sSteps"></div>
+        <p class="tip">${tr.tip}</p>
+        <div class="lab"><span>Rythmes</span><span>${tr.variants.length}</span></div>
+        <div class="vlist">${tr.variants.map((v, k) => `<button data-k="${k}" aria-pressed="${k === state.var[tr.id]}">${v.name}<span>${v.d}</span></button>`).join("")}</div>
+      </div>`;
+    p.scrollTop = scroll;
+    const steps = $("sSteps"); sheetCells = [];
+    for (let s = 0; s < 16; s++) { const h = tr.hit(s, s), c = document.createElement("i"); if (h) c.className = h.v >= 0.8 ? "hit acc" : "hit"; steps.appendChild(c); sheetCells.push(c); }
+    if (lastStep >= 0) sheetCells[lastStep].classList.add("now");
+    $("sx").onclick = closeSheet;
+    $("sOn").onclick = () => { state.on[tr.id] = !state.on[tr.id]; save(); refresh(); };
+    $("sSolo").onclick = () => { solo = solo === tr.id ? null : tr.id; if (solo) state.on[tr.id] = true; save(); refresh(); };
+    $("sDice").onclick = () => { randVariant(tr, true); save(); refresh(); };
+    $("sVol").oninput = e => { state.vol[tr.id] = +e.target.value; save(); if (bus[tr.id]) bus[tr.id].gain.setTargetAtTime(state.vol[tr.id] ** 2, ctx.currentTime, 0.02); };
+    p.querySelectorAll(".vlist button").forEach(b => b.onclick = () => { state.var[tr.id] = +b.dataset.k; state.on[tr.id] = true; save(); refresh(); });
+  }
+
+  // ---------- Playhead ----------
   let lastStep = -1;
   function showStep(s) {
     if (s === lastStep) return;
-    if (lastStep >= 0) cols[lastStep].forEach(c => c.classList.remove("now"));
     countEls.forEach(c => c.classList.remove("now", "and"));
+    if (lastStep >= 0 && sheetCells[lastStep]) sheetCells[lastStep].classList.remove("now");
     lastStep = s;
     if (s < 0) return;
-    cols[s].forEach(c => c.classList.add("now"));
     countEls[s >> 1].classList.add(s % 2 ? "and" : "now");
+    if (sheetCells[s]) sheetCells[s].classList.add("now");
+  }
+  function flash(id) {
+    if (reduce) return;
+    tiles[id].ico.animate([{ transform: "scale(1.14) rotate(-2deg)" }, { transform: "scale(1)" }], { duration: 150, easing: "ease-out" });
   }
   function draw() {
     if (!playing) return;
     const now = ctx.currentTime;
     let cur = null;
-    while (uiQueue.length && uiQueue[0].t <= now) cur = uiQueue.shift();
+    while (uiQueue.length && uiQueue[0].t <= now) { cur = uiQueue.shift(); cur.hits.forEach(flash); }
     if (cur) showStep(cur.s);
     requestAnimationFrame(draw);
   }
@@ -785,22 +917,32 @@ footer p { margin: 0; max-width: 65ch; }
   }
 
   // ---------- Wiring ----------
+  for (let b = 40; b <= 250; b++) $("bpm").add(new Option(`${b} BPM`, b));
+  KEYS.forEach((k, i) => $("key").add(new Option(k, i)));
+  PROGS.forEach((p, i) => $("prog").add(new Option(p.name, i)));
+
   $("play").addEventListener("click", () => playing ? stop() : start());
-  const setBpm = v => { state.bpm = Math.max(90, Math.min(220, Math.round(v))); save(); refresh(); };
-  $("bpm").addEventListener("input", e => setBpm(+e.target.value));
-  $("tDown").addEventListener("click", () => setBpm(state.bpm - 5));
-  $("tUp").addEventListener("click", () => setBpm(state.bpm + 5));
-  $("c32").addEventListener("click", () => { state.clave = "32"; save(); paintPatterns(); refresh(); });
-  $("c23").addEventListener("click", () => { state.clave = "23"; save(); paintPatterns(); refresh(); });
+  $("bpm").addEventListener("change", e => { state.bpm = +e.target.value; save(); refresh(); });
+  $("key").addEventListener("change", e => { state.key = +e.target.value; save(); refresh(); });
+  $("prog").addEventListener("change", e => { state.prog = +e.target.value; save(); refresh(); });
+  $("claveBtn").addEventListener("click", () => { state.clave = state.clave === "32" ? "23" : "32"; save(); refresh(); });
+  const setCount = v => { state.count = v; if (v === "voix") say(" ", 0); save(); refresh(); };
+  $("countBtn").addEventListener("click", () => setCount({ off: "clic", clic: "voix", voix: "off" }[state.count]));
+  document.querySelectorAll("#countSeg button").forEach(b => b.addEventListener("click", () => setCount(b.dataset.v)));
+  document.querySelectorAll("#danceSeg button").forEach(b => b.addEventListener("click", () => { state.dance = b.dataset.v; save(); refresh(); }));
+  $("lang").addEventListener("change", e => { state.lang = e.target.value; save(); });
   $("addNext").addEventListener("click", addNext);
-  $("shuffle").addEventListener("click", () => { TRACKS.forEach(t => randVariant(t)); save(); paintPatterns(); refresh(); });
+  $("removeLast").addEventListener("click", removeLast);
+  $("reset").addEventListener("click", () => { state.on = { clave: true }; solo = null; save(); refresh(); });
+  $("all").addEventListener("click", () => { TRACKS.forEach(t => state.on[t.id] = true); save(); refresh(); });
+  $("shuffle").addEventListener("click", () => { TRACKS.forEach(t => randVariant(t)); save(); refresh(); });
   $("randAdd").addEventListener("change", e => { state.randAdd = e.target.checked; save(); });
   $("vary").addEventListener("change", e => { state.vary = e.target.checked; cycles = 0; save(); });
-  $("removeLast").addEventListener("click", removeLast);
-  $("reset").addEventListener("click", () => { state.on = { clave: true }; save(); refresh(); });
   $("auto").addEventListener("change", e => { state.auto = e.target.checked; cycles = 0; save(); setAutoInfo(state.autoN); });
   $("autoN").addEventListener("change", e => { state.autoN = +e.target.value; cycles = 0; save(); setAutoInfo(state.autoN); });
+  $("scrim").addEventListener("click", closeSheet);
   document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && sheetId) closeSheet();
     if (e.code === "Space" && !/INPUT|SELECT|BUTTON/.test(e.target.tagName)) { e.preventDefault(); playing ? stop() : start(); }
   });
   document.addEventListener("visibilitychange", async () => {
@@ -809,6 +951,6 @@ footer p { margin: 0; max-width: 65ch; }
     }
   });
 
-  buildTracks(); paintPatterns(); refresh();
+  buildCount(); buildGrid(); refresh();
 })();
 </script>
