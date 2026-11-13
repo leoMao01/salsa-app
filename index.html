@@ -340,23 +340,87 @@ footer p { margin: 0; max-width: 65ch; }
   TRACKS.forEach(t => { if (state.vol[t.id] == null) state.vol[t.id] = 0.8; });
 
   // ---------- Audio ----------
-  let ctx = null, master = null, noiseBuf = null;
+  // Modal synthesis: each instrument = a few resonant partials + a strike transient,
+  // mixed like a classic salsa record (stereo spread, short room reverb, glue compression).
+  let ctx = null, master = null, noiseBuf = null, shakerBuf = null, reverb = null, pianoWave = null, bassWave = null;
   const bus = {};
+  const MIX = {            // pan (-1 left … 1 right), reverb send
+    clave:   [0.12, 0.16], congas: [0.45, 0.14], bongo: [-0.4, 0.14], campana: [-0.3, 0.18],
+    guiro:   [0.3, 0.12],  maracas: [-0.55, 0.1], cascara: [-0.15, 0.16], bajo: [0, 0.03], piano: [-0.12, 0.2],
+  };
+
+  function makeIR(sec, decay) {
+    const n = Math.floor(ctx.sampleRate * sec), ir = ctx.createBuffer(2, n, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = ir.getChannelData(c); let lp = 0;
+      for (let i = 0; i < n; i++) {
+        const t = i / ctx.sampleRate;
+        lp += 0.35 * ((Math.random() * 2 - 1) - lp);          // darken the tail
+        d[i] = t < 0.012 ? 0 : lp * Math.exp(-t / decay);
+      }
+    }
+    return ir;
+  }
+  function makeShaker() {
+    // Sparse random grains = seeds hitting the gourd
+    const n = ctx.sampleRate * 2, b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+    let i = 0;
+    while (i < n) {
+      const len = 20 + Math.floor(Math.random() * 60), amp = Math.random();
+      for (let k = 0; k < len && i + k < n; k++) d[i + k] += amp * (Math.random() * 2 - 1) * Math.exp(-k / (len / 3));
+      i += 8 + Math.floor(Math.random() * 90);
+    }
+    return b;
+  }
+  function wave(amps) {
+    const re = new Float32Array(amps.length + 1), im = new Float32Array(amps.length + 1);
+    amps.forEach((a, k) => im[k + 1] = a);
+    return ctx.createPeriodicWave(re, im);
+  }
 
   function initAudio() {
     if (ctx) return;
     const AC = window.AudioContext || window.webkitAudioContext;
     ctx = new AC({ latencyHint: "interactive" });
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.15;
-    master = ctx.createGain(); master.gain.value = 0.9;
-    master.connect(comp); comp.connect(ctx.destination);
+
+    // Master: air shelf -> glue compressor -> brickwall-ish limiter
+    master = ctx.createGain(); master.gain.value = 0.8;
+    const air = ctx.createBiquadFilter(); air.type = "highshelf"; air.frequency.value = 7000; air.gain.value = 2.5;
+    const mud = ctx.createBiquadFilter(); mud.type = "peaking"; mud.frequency.value = 320; mud.Q.value = 0.9; mud.gain.value = -2.5;
+    const glue = ctx.createDynamicsCompressor();
+    glue.threshold.value = -20; glue.ratio.value = 2.5; glue.attack.value = 0.012; glue.release.value = 0.18; glue.knee.value = 8;
+    const lim = ctx.createDynamicsCompressor();
+    lim.threshold.value = -3; lim.ratio.value = 20; lim.attack.value = 0.001; lim.release.value = 0.08; lim.knee.value = 0;
+    master.connect(mud); mud.connect(air); air.connect(glue); glue.connect(lim); lim.connect(ctx.destination);
+
+    reverb = ctx.createConvolver(); reverb.buffer = makeIR(1.5, 0.32);
+    const rvLow = ctx.createBiquadFilter(); rvLow.type = "highpass"; rvLow.frequency.value = 250;
+    const rvOut = ctx.createGain(); rvOut.gain.value = 0.9;
+    reverb.connect(rvLow); rvLow.connect(rvOut); rvOut.connect(master);
+
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    shakerBuf = makeShaker();
+
+    // Bright acoustic piano spectrum (hammer struck ~1/8 of the string) and a round baby-bass
+    pianoWave = wave([1, .62, .5, .32, .27, .16, .06, .1, .07, .045, .03, .02, .014, .01]);
+    bassWave = wave([1, .42, .18, .09, .05, .02]);
+
     TRACKS.forEach(t => {
       const g = ctx.createGain(); g.gain.value = state.vol[t.id] * state.vol[t.id];
-      g.connect(master); bus[t.id] = g;
+      let out = g;
+      if (t.id === "bajo") {   // gentle tube-style saturation so the bass reads on phone speakers
+        const ws = ctx.createWaveShaper(), c = new Float32Array(1024);
+        for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; c[i] = Math.tanh(1.8 * x) / Math.tanh(1.8); }
+        ws.curve = c; ws.oversample = "2x"; g.connect(ws); out = ws;
+      }
+      const [pan, send] = MIX[t.id];
+      let p = null;
+      if (ctx.createStereoPanner) { p = ctx.createStereoPanner(); p.pan.value = pan; out.connect(p); out = p; }
+      out.connect(master);
+      const sg = ctx.createGain(); sg.gain.value = send; out.connect(sg); sg.connect(reverb);
+      bus[t.id] = g;
     });
   }
 
@@ -369,7 +433,6 @@ footer p { margin: 0; max-width: 65ch; }
     } catch (e) {}
     try {
       if (!unlockIOS.el) {
-        // 0.5 s of silent 8-bit WAV, looped, keeps iOS in "media playback" mode
         const n = 4000, buf = new Uint8Array(44 + n), v = new DataView(buf.buffer);
         const w = (o, s) => { for (let i = 0; i < s.length; i++) buf[o + i] = s.charCodeAt(i); };
         w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true);
@@ -385,121 +448,174 @@ footer p { margin: 0; max-width: 65ch; }
     } catch (e) {}
   }
 
-  function env(g, t, peak, dur, att = 0.002) {
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(peak, t + att);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  }
-  function tone(dest, t, { f, f2, gt, dur, type = "sine", g = 1, att }) {
-    const o = ctx.createOscillator(), e = ctx.createGain();
-    o.type = type; o.frequency.setValueAtTime(f, t);
-    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + (gt || dur * 0.5));
-    env(e, t, g, dur, att); o.connect(e); e.connect(dest);
-    o.start(t); o.stop(t + dur + 0.03);
-  }
-  function noise(dest, t, { dur, ftype = "bandpass", f = 2000, q = 1, g = 1, att }) {
-    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), e = ctx.createGain();
-    s.buffer = noiseBuf; fl.type = ftype; fl.frequency.value = f; fl.Q.value = q;
-    env(e, t, g, dur, att); s.connect(fl); fl.connect(e); e.connect(dest);
-    s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.03);
-    return e;
-  }
   const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  const jit = (x, amt = 0.01) => x * (1 + (Math.random() - 0.5) * 2 * amt);
+
+  // A single decaying sine partial, optional pitch drop (skin tension) at the strike
+  function partial(dest, t, f, g, dec, bend = 0, bendT = 0.02, type = "sine") {
+    if (g <= 0) return;
+    const o = ctx.createOscillator(), e = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f * (1 + bend), t);
+    if (bend) o.frequency.exponentialRampToValueAtTime(f, t + bendT);
+    e.gain.setValueAtTime(0, t);
+    e.gain.linearRampToValueAtTime(g, t + 0.0015);
+    e.gain.setTargetAtTime(0, t + 0.0015, dec / 4.6);
+    o.connect(e); e.connect(dest);
+    o.start(t); o.stop(t + dec + 0.05);
+  }
+  // Filtered noise burst (stick, skin slap, scrape)
+  function burst(dest, t, { dur, f = 2000, q = 0.8, type = "bandpass", g = 1, att = 0.0008, buf }) {
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), e = ctx.createGain();
+    s.buffer = buf || noiseBuf; fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+    e.gain.setValueAtTime(0, t);
+    e.gain.linearRampToValueAtTime(g, t + att);
+    e.gain.setTargetAtTime(0, t + att, dur / 4);
+    s.connect(fl); fl.connect(e); e.connect(dest);
+    s.start(t, Math.random() * (s.buffer.duration - dur - 0.1)); s.stop(t + dur + 0.05);
+  }
+  // Drum membrane: circular-membrane mode ratios, higher modes die faster
+  const MEMBRANE = [[1, 1, 1], [1.59, .45, .5], [2.14, .28, .35], [2.65, .16, .25], [3.16, .08, .2]];
+  function membrane(d, t, f, g, dec, bright = 1, bend = 0.06) {
+    MEMBRANE.forEach(([r, a, dk], i) => partial(d, t, f * r, g * a * (i ? bright : 1), dec * dk, i ? 0 : bend, 0.025));
+  }
 
   const PLAY = {
     clave(d, t, h) {
-      tone(d, t, { f: 2600, f2: 2450, dur: 0.09, g: 0.75 * h.v });
-      tone(d, t, { f: 1750, dur: 0.04, type: "triangle", g: 0.25 * h.v });
-      noise(d, t, { dur: 0.012, f: 3500, q: 2, g: 0.3 * h.v });
+      // Rosewood: one strong, very pure mode around 2.4 kHz + a fast inharmonic one
+      const f = jit(2480, 0.006), v = h.v;
+      partial(d, t, f, 0.7 * v, 0.13);
+      partial(d, t, f * 2.71, 0.12 * v, 0.03);
+      partial(d, t, f * 0.5, 0.05 * v, 0.04);
+      burst(d, t, { dur: 0.006, f: 3200, q: 1.5, g: 0.35 * v });
     },
     congas(d, t, h) {
       const v = h.v;
       if (h.k === "open" || h.k === "tumba") {
-        const f = h.k === "tumba" ? 220 : 330;
-        tone(d, t, { f: f * 1.18, f2: f, gt: 0.03, dur: 0.32, g: 0.85 * v });
-        tone(d, t, { f: f * 2.4, dur: 0.06, g: 0.12 * v });
-        noise(d, t, { dur: 0.02, f: 900, q: 1, g: 0.18 * v });
+        const f = jit(h.k === "tumba" ? 196 : 300, 0.008);
+        membrane(d, t, f, 0.8 * v, h.k === "tumba" ? 0.5 : 0.38, 0.9, 0.07);
+        burst(d, t, { dur: 0.012, f: 1400, q: 0.7, g: 0.22 * v });       // palm on skin
+        partial(d, t, 85, 0.18 * v, 0.06);                               // shell thump
       } else if (h.k === "slap") {
-        noise(d, t, { dur: 0.07, f: 1900, q: 0.9, g: 0.75 * v });
-        tone(d, t, { f: 460, f2: 380, dur: 0.06, g: 0.35 * v });
+        // Slap: fingers cup and snap — loud crack, choked tone
+        burst(d, t, { dur: 0.05, f: 2400, q: 0.6, g: 0.85 * v });
+        burst(d, t, { dur: 0.02, f: 5500, q: 0.8, g: 0.35 * v });
+        membrane(d, t, 300 * 1.1, 0.28 * v, 0.07, 1.4, 0.1);
+        partial(d, t, 960, 0.12 * v, 0.03);
       } else if (h.k === "heel") {
-        tone(d, t, { f: 120, f2: 85, dur: 0.07, g: 0.45 * v });
-      } else {
-        noise(d, t, { dur: 0.025, f: 1300, q: 1.2, g: 0.25 * v });
-        tone(d, t, { f: 310, dur: 0.035, g: 0.18 * v });
+        partial(d, t, jit(95), 0.5 * v, 0.07, 0.15, 0.02);
+        burst(d, t, { dur: 0.02, f: 500, type: "lowpass", q: 0.5, g: 0.25 * v });
+      } else {   // tip
+        burst(d, t, { dur: 0.016, f: 1800, q: 1, g: 0.32 * v });
+        partial(d, t, 300 * 1.25, 0.14 * v, 0.03);
       }
     },
     bongo(d, t, h) {
       const v = h.v;
-      if (h.k === "open") { tone(d, t, { f: 470, f2: 400, gt: 0.02, dur: 0.18, g: 0.8 * v }); noise(d, t, { dur: 0.015, f: 2500, g: 0.2 * v }); }
-      else if (h.k === "idx") { tone(d, t, { f: 720, f2: 640, gt: 0.015, dur: 0.1, g: 0.6 * v }); noise(d, t, { dur: 0.012, f: 3200, g: 0.25 * v }); }
-      else if (h.k === "thumb") tone(d, t, { f: 560, dur: 0.045, g: 0.3 * v });
-      else tone(d, t, { f: 200, f2: 160, dur: 0.05, g: 0.35 * v });
+      if (h.k === "open") {          // hembra open tone
+        membrane(d, t, jit(440, 0.008), 0.7 * v, 0.2, 1, 0.05);
+        burst(d, t, { dur: 0.01, f: 3000, q: 0.8, g: 0.3 * v });
+      } else if (h.k === "idx") {    // macho, sharp finger
+        membrane(d, t, jit(690, 0.01), 0.55 * v, 0.11, 1.2, 0.05);
+        burst(d, t, { dur: 0.008, f: 4200, q: 0.9, g: 0.35 * v });
+      } else if (h.k === "thumb") {
+        partial(d, t, jit(640), 0.22 * v, 0.035);
+        burst(d, t, { dur: 0.01, f: 2500, q: 1, g: 0.12 * v });
+      } else {
+        partial(d, t, jit(210), 0.3 * v, 0.05, 0.1);
+      }
     },
     campana(d, t, h) {
-      const low = h.k === "low", fs = low ? [540, 815] : [720, 1090];
-      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = low ? 1700 : 2300; bp.Q.value = 1.4;
-      const e = ctx.createGain(); env(e, t, 0.32 * h.v, low ? 0.32 : 0.14, 0.001);
-      bp.connect(e); e.connect(d);
-      fs.forEach(f => { const o = ctx.createOscillator(); o.type = "square"; o.frequency.value = f; o.connect(bp); o.start(t); o.stop(t + 0.36); });
+      // Hand bell: inharmonic partials. Mouth = open and long; neck = high and choked.
+      const mouth = h.k === "low", f = jit(mouth ? 580 : 600, 0.004), v = h.v;
+      const parts = mouth
+        ? [[1, .5, .5], [1.48, .35, .4], [2.03, .3, .3], [2.79, .18, .2], [3.71, .1, .12]]
+        : [[1, .12, .08], [1.48, .2, .08], [2.03, .35, .07], [2.79, .3, .06], [3.71, .2, .05]];
+      parts.forEach(([r, a, dec]) => partial(d, t, f * r, a * v * 0.6, dec));
+      burst(d, t, { dur: 0.008, f: 4500, q: 1, g: 0.3 * v });
     },
     guiro(d, t, h) {
-      const long = h.k === "long", dur = long ? 0.2 : 0.07;
-      const am = ctx.createGain(); am.connect(d);
-      const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter();
-      s.buffer = noiseBuf; fl.type = "bandpass"; fl.frequency.value = 3300; fl.Q.value = 1.3;
-      s.connect(fl); fl.connect(am);
-      const dt = 1 / 75, g = 0.6 * h.v;
+      // A stick scraping ridges: a train of tiny clicks through the gourd's resonances
+      const long = h.k === "long", dur = long ? 0.19 : 0.065, v = h.v;
+      const s = ctx.createBufferSource(); s.buffer = noiseBuf;
+      const r1 = ctx.createBiquadFilter(); r1.type = "bandpass"; r1.frequency.value = 2700; r1.Q.value = 3;
+      const r2 = ctx.createBiquadFilter(); r2.type = "bandpass"; r2.frequency.value = 5600; r2.Q.value = 2;
+      const am = ctx.createGain(), mix = ctx.createGain(); mix.gain.value = 1.6;
+      s.connect(am); am.connect(r1); am.connect(r2); r1.connect(mix); r2.connect(mix); mix.connect(d);
       am.gain.setValueAtTime(0, t);
-      for (let x = 0; x < dur; x += dt) {
-        const fade = long ? 0.6 + 0.4 * (x / dur) : 1;
-        am.gain.setValueAtTime(g * fade, t + x);
-        am.gain.setValueAtTime(g * 0.15 * fade, t + x + dt * 0.45);
+      let x = 0, rate = long ? 48 : 70;
+      while (x < dur) {
+        const fade = long ? 0.55 + 0.45 * Math.sin(Math.PI * x / dur) : 1 - 0.3 * x / dur;
+        am.gain.setValueAtTime(v * fade * (0.8 + Math.random() * 0.3), t + x);
+        am.gain.setTargetAtTime(0, t + x + 0.0005, 0.0025);
+        x += 1 / rate; rate *= long ? 1.035 : 1.02;
       }
-      am.gain.setValueAtTime(0, t + dur);
-      s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
+      s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.03);
     },
     maracas(d, t, h) {
-      noise(d, t, { dur: 0.055, ftype: "highpass", f: 6500, q: 0.7, g: 0.5 * h.v, att: 0.006 });
+      const v = h.v;
+      burst(d, t, { buf: shakerBuf, dur: 0.07 + 0.03 * v, f: 6200, q: 0.7, g: 1.9 * v, att: 0.008 });
+      burst(d, t + 0.01, { buf: shakerBuf, dur: 0.03, f: 9000, type: "highpass", q: 0.5, g: 0.6 * v, att: 0.004 });
     },
     cascara(d, t, h) {
+      const v = h.v;
       if (h.k === "timbal") {
-        tone(d, t, { f: 300, f2: 260, gt: 0.03, dur: 0.35, g: 0.7 * h.v });
-        tone(d, t, { f: 810, dur: 0.18, g: 0.18 * h.v });
-        noise(d, t, { dur: 0.06, f: 3000, q: 0.8, g: 0.45 * h.v });
+        // Rimshot on the hembra: bright membrane + ringing steel shell
+        membrane(d, t, jit(330), 0.55 * v, 0.3, 1.3, 0.05);
+        [[1870, .12, .45], [2950, .08, .35], [4120, .05, .25]].forEach(([f, a, dec]) => partial(d, t, f, a * v, dec));
+        burst(d, t, { dur: 0.09, f: 3500, q: 0.5, g: 0.5 * v });
       } else if (h.k === "bell") {
-        tone(d, t, { f: 1180, dur: 0.22, type: "square", g: 0.07 * h.v });
-        tone(d, t, { f: 1770, dur: 0.15, type: "square", g: 0.05 * h.v });
-        noise(d, t, { dur: 0.01, f: 5000, g: 0.2 * h.v });
+        // Timbal-mounted cha-cha bell: smaller and brighter than the bongo bell
+        const f = jit(900, 0.004);
+        [[1, .35, .25], [1.5, .25, .2], [2.11, .22, .15], [2.92, .12, .1]].forEach(([r, a, dec]) => partial(d, t, f * r, a * v * 1.1, dec));
+        burst(d, t, { dur: 0.006, f: 5000, q: 1, g: 0.3 * v });
       } else {
-        noise(d, t, { dur: 0.035, f: 4200, q: 2, g: 0.55 * h.v });
-        tone(d, t, { f: 1550, f2: 1300, dur: 0.035, type: "triangle", g: 0.28 * h.v });
+        // Stick on the steel shell: dry, metallic "tick"
+        [[1240, .22, .045], [2870, .16, .03], [4310, .1, .02]].forEach(([f, a, dec]) => partial(d, t, jit(f, 0.01), a * v * 1.8, dec));
+        burst(d, t, { dur: 0.012, f: 3800, q: 1.2, g: 0.8 * v });
       }
     },
     bajo(d, t, h) {
-      const f = hz(h.n), dur = h.len * stepDur() * 0.95;
-      const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 2;
-      lp.frequency.setValueAtTime(1100, t); lp.frequency.exponentialRampToValueAtTime(320, t + 0.25);
+      // Baby bass / upright: round fundamental, pluck that blooms then settles
+      const f = hz(h.n), dur = h.len * stepDur() * 0.92, v = h.v;
+      const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.9;
+      lp.frequency.setValueAtTime(2200, t); lp.frequency.setTargetAtTime(420, t, 0.07);
       const e = ctx.createGain();
-      e.gain.setValueAtTime(0.0001, t); e.gain.linearRampToValueAtTime(0.55, t + 0.008);
-      e.gain.exponentialRampToValueAtTime(0.28, t + dur * 0.7);
-      e.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
+      e.gain.setValueAtTime(0, t);
+      e.gain.linearRampToValueAtTime(0.48 * v, t + 0.006);
+      e.gain.setTargetAtTime(0.26 * v, t + 0.006, 0.12);
+      e.gain.setTargetAtTime(0, t + dur, 0.035);
       lp.connect(e); e.connect(d);
-      [["sawtooth", 1, 0.5], ["sine", 1, 0.9], ["triangle", 2, 0.25]].forEach(([type, m, gg]) => {
-        const o = ctx.createOscillator(), og = ctx.createGain();
-        o.type = type; o.frequency.value = f * m; og.gain.value = gg;
-        o.connect(og); og.connect(lp); o.start(t); o.stop(t + dur + 0.08);
-      });
+      const o = ctx.createOscillator(); o.setPeriodicWave(bassWave);
+      o.frequency.setValueAtTime(f * 0.985, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.035);
+      o.connect(lp); o.start(t); o.stop(t + dur + 0.25);
+      burst(d, t, { dur: 0.015, f: 900, type: "lowpass", q: 0.7, g: 0.12 * v });   // finger on string
     },
     piano(d, t, h) {
+      // Two slightly detuned strings per note, brightness that closes as the note decays, hammer noise
+      const v = h.v;
       h.n.forEach((m, i) => {
-        const f = hz(m), g = (i === h.n.length - 1 ? 0.2 : 0.14) * h.v;
-        tone(d, t, { f, dur: 0.55, type: "triangle", g, att: 0.003 });
-        tone(d, t, { f: f * 2, dur: 0.25, g: g * 0.35, att: 0.002 });
-        tone(d, t, { f: f * 3, dur: 0.1, g: g * 0.12, att: 0.002 });
+        const f = hz(m), top = i === h.n.length - 1, g = (top ? 0.17 : 0.12) * v;
+        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.5;
+        const c0 = Math.min(12000, f * (6 + 6 * v));
+        lp.frequency.setValueAtTime(c0, t); lp.frequency.setTargetAtTime(Math.max(600, f * 2.2), t, 0.12);
+        const e = ctx.createGain();
+        e.gain.setValueAtTime(0, t);
+        e.gain.linearRampToValueAtTime(g, t + 0.002);
+        e.gain.setTargetAtTime(g * 0.35, t + 0.002, 0.07);
+        e.gain.setTargetAtTime(0, t + 0.38, 0.06);
+        lp.connect(e); e.connect(d);
+        [-0.0012, 0.0012].forEach(det => {
+          const o = ctx.createOscillator(); o.setPeriodicWave(pianoWave);
+          o.frequency.value = f * (1 + det); o.connect(lp); o.start(t); o.stop(t + 0.8);
+        });
       });
+      burst(d, t, { dur: 0.012, f: 2800, q: 0.7, g: 0.07 * v });
     },
   };
+
+  // Per-instrument feel: congas sit a hair behind, bongó a hair ahead (ms)
+  const FEEL = { clave: 0, congas: 0.004, bongo: -0.002, campana: 0, guiro: 0.002, maracas: -0.001, cascara: 0, bajo: 0.003, piano: -0.002 };
 
   // ---------- Scheduler ----------
   const stepDur = () => 60 / state.bpm / 2;
@@ -513,9 +629,9 @@ footer p { margin: 0; max-width: 65ch; }
       if (!state.on[tr.id]) return;
       const h = tr.hit(s);
       if (!h) return;
-      const human = (Math.random() - 0.5) * 0.006;
-      const hh = Object.assign({}, h, { v: h.v * (0.92 + Math.random() * 0.12) });
-      PLAY[tr.id](bus[tr.id], Math.max(ctx.currentTime, t + (tr.id === "clave" ? 0 : human)), hh);
+      const human = tr.id === "clave" ? 0 : FEEL[tr.id] + (Math.random() - 0.5) * 0.008;
+      const hh = Object.assign({}, h, { v: Math.min(1, h.v * (0.88 + Math.random() * 0.16)) });
+      PLAY[tr.id](bus[tr.id], Math.max(ctx.currentTime, t + human), hh);
     });
     uiQueue.push({ s, t });
   }
