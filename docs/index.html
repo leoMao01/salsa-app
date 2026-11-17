@@ -204,7 +204,7 @@ footer p { margin: 0; max-width: 65ch; }
 .bigcount.key { color: var(--hot); }
 .bigcount.pause { color: var(--line); }
 .bigcount small { display: block; font: 600 13px var(--font-body); color: var(--muted); margin-top: 6px; letter-spacing: .04em; }
-.feet { width: 100%; max-width: 210px; justify-self: center; overflow: visible; }
+.feet { width: 100%; max-width: 210px; max-height: 190px; justify-self: center; overflow: visible; }
 .feet .foot { transition: transform .12s ease-out; }
 .feet .sole { fill: transparent; stroke: var(--muted); stroke-width: 2.5; transition: fill .1s, stroke .1s; }
 .feet .foot.weight .sole { fill: color-mix(in srgb, var(--fg) 22%, transparent); stroke: var(--fg); }
@@ -260,6 +260,36 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
 .songs li span { font-size: 12.5px; color: var(--muted); }
 .songs a { color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; padding: 6px 4px; }
 body.music-mode .ctrls { display: none; }
+.help { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; font-size: 14px; }
+.help b { color: var(--accent); font-weight: 600; }
+.role-row { display: flex; gap: 8px; align-items: center; }
+.role-row .seg { flex: 1; }
+.role-row .btn { white-space: nowrap; padding: 10px 12px; }
+.big-view {
+  position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column;
+  padding: max(14px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  transition: background .1s;
+}
+.big-view[data-beat="0"], .big-view[data-beat="4"] { background: color-mix(in srgb, var(--hot) 24%, var(--bg)); }
+.bigx { position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); z-index: 2; width: 48px; height: 48px; font-size: 26px; }
+#slotBig { flex: 1; display: flex; min-height: 0; }
+.big-view .stage { flex: 1; background: transparent; justify-content: space-evenly; gap: 2vh; padding: 0; }
+.big-view .role-row { display: none; }
+.big-view .stage-main { grid-template-columns: 1fr; gap: 1vh; }
+.big-view .bigcount { font-size: min(30vh, 62vw); }
+.big-view .bigcount small { font-size: clamp(16px, 2.6vh, 24px); }
+.big-view .feet { width: auto; height: 34vh; max-height: none; max-width: 100%; }
+.big-view .feet text { font-size: 17px; }
+.big-view .instr { font-size: clamp(24px, 4.2vh, 46px); min-height: 0; }
+.big-view .phrase b { font-size: clamp(16px, 2.6vh, 26px); }
+.big-view .phrase span { font-size: clamp(13px, 1.9vh, 18px); }
+@media (orientation: landscape) {
+  .big-view .stage-main { grid-template-columns: 1fr 1fr; }
+  .big-view .bigcount { font-size: min(58vh, 34vw); }
+  .big-view .feet { height: 62vh; }
+  .big-view .instr { font-size: clamp(20px, 5.5vh, 44px); }
+  .big-view .phrases { display: none; }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -282,10 +312,10 @@ body.music-mode .ctrls { display: none; }
 
     <div id="slotBasic">
     <div class="stage" id="stage">
-      <div class="seg" id="roleSeg"><button data-v="lead">Cavalier</button><button data-v="follow">Cavalière</button></div>
+      <div class="role-row" id="roleRow"><div class="seg" id="roleSeg"><button data-v="lead">Cavalier</button><button data-v="follow">Cavalière</button></div><button class="btn" id="bigOpen" aria-label="Grand écran">⤢ Grand écran</button></div>
       <div class="stage-main">
         <div class="bigcount" id="bigCount">1<small id="bigSub">Appuie sur lecture</small></div>
-        <svg class="feet" id="feet" viewBox="0 0 200 230" style="max-height:190px" aria-hidden="true">
+        <svg class="feet" id="feet" viewBox="0 0 200 230" aria-hidden="true">
           <line class="guide" x1="20" y1="60" x2="180" y2="60"/><line class="guide" x1="20" y1="170" x2="180" y2="170"/>
           <text class="glab" x="100" y="16">AVANT</text><text class="glab" x="100" y="226">ARRIÈRE</text>
           <g class="foot" id="footL"><path class="sole" d="M0,-40 C13,-40 17,-22 15,-2 C13,18 12,36 0,38 C-12,36 -15,18 -16,-2 C-17,-22 -12,-40 0,-40Z"/><text y="6">G</text></g>
@@ -327,6 +357,18 @@ body.music-mode .ctrls { display: none; }
     </div>
 
     <div id="slotMusic"></div>
+
+    <div class="card">
+      <div class="lab"><span>Où taper ?</span></div>
+      <ul class="help">
+        <li><b>Tape sur chaque pas.</b> Un coup par temps : 1, 2, 3, 4, 5, 6, 7, 8. En salsa ça fait environ 3 coups par seconde.</li>
+        <li><b>Suis la cloche.</b> Dans les passages forts, la grosse cloche frappe chaque temps, avec un son plus grave sur 1, 3, 5, 7. C'est le repère le plus simple.</li>
+        <li><b>Pas les maracas ni le güiro.</b> Ils vont deux fois plus vite que le temps. Et pas la basse non plus : en salsa, elle évite exprès le 1.</li>
+        <li><b>Pour trouver le 1</b>, écoute les deux coups ouverts des congas, « tou-tou » : ils tombent juste avant le 1 et le 5. Le chanteur démarre aussi souvent ses phrases sur le 1.</li>
+        <li><b>Astuce :</b> marche d'abord sur place avec la musique, puis tape au rythme de tes pieds.</li>
+        <li><b>Pas d'inquiétude :</b> si tu tapes un temps sur deux, l'appli corrige toute seule. Si tu confonds le 1 et le 5, ce n'est pas grave pour t'entraîner : le pas est le même, il démarre juste dans l'autre sens.</li>
+      </ul>
+    </div>
 
     <div class="card">
       <div class="lab"><span>Comment ça marche</span></div>
@@ -408,6 +450,11 @@ body.music-mode .ctrls { display: none; }
       <button class="play" id="play" aria-label="Lecture"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg></button>
     </div>
   </div>
+</div>
+
+<div class="big-view" id="bigView" hidden>
+  <button class="x bigx" id="bigClose" aria-label="Fermer le grand écran">×</button>
+  <div id="slotBig"></div>
 </div>
 
 <div class="sheet" id="sheet" hidden>
@@ -1255,6 +1302,7 @@ body.music-mode .ctrls { display: none; }
   }
   function showBeat(b) {
     curBeat = b;
+    $("bigView").dataset.beat = b;
     const L = { mode: curMode() }, role = state.role;
     const table = (L.mode === "march" ? MARCH : FEET)[role];
     const f = b < 0 ? [0, 0, role === "lead" ? "R" : "L", null] : table[b];
@@ -1275,6 +1323,7 @@ body.music-mode .ctrls { display: none; }
     document.querySelectorAll("#stepList li").forEach((li, i) => li.classList.toggle("now", i === b));
   }
   function setTab(tab) {
+    closeBig();
     state.tab = tab; save();
     $("viewBasic").hidden = tab !== "basic"; $("viewOrch").hidden = tab !== "orch"; $("viewMusic").hidden = tab !== "music";
     ["Basic", "Music", "Orch"].forEach(n => $("tab" + n).setAttribute("aria-selected", tab === n.toLowerCase()));
@@ -1308,7 +1357,7 @@ body.music-mode .ctrls { display: none; }
   // The app can't read streamed audio, so the dancer taps the beat; we fit a tempo and phase to the taps
   // and run the count from the clock. The audio session is set to "ambient" so a click mixes with the music.
   const sync = { on: false, period: 500, t0: 0 };
-  let taps = [], tapIdx = 0, syncRaf = 0, lastSyncBeat = -1, nextClickBeat = 0;
+  let taps = [], tapIdx = 0, syncRaf = 0, lastSyncBeat = -1, nextClickBeat = 0, tempoNote = "";
   const MODE_PH = { march: LESSONS[0].ph, basic: LESSONS[1].ph, turn: LESSONS[3].ph };
   function renderMusic() {
     document.querySelectorAll("#mModeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.musicMode));
@@ -1317,7 +1366,7 @@ body.music-mode .ctrls { display: none; }
     $("ph1t").textContent = MODE_PH[state.musicMode][0]; $("ph2t").textContent = MODE_PH[state.musicMode][1];
     ["oneBtn", "bpmDown", "bpmUp", "early", "late", "syncStop"].forEach(id => $(id).disabled = !sync.on);
     $("syncBpm").textContent = sync.on ? `${Math.round(60000 / sync.period)} BPM` : "— BPM";
-    $("syncState").textContent = sync.on ? "Calé sur ta musique" : taps.length ? `${Math.min(taps.length, 4)} / 4 coups` : "Pas encore calé";
+    $("syncState").textContent = sync.on ? (tempoNote || "Calé sur ta musique") : taps.length ? `${Math.min(taps.length, 4)} / 4 coups` : "Pas encore calé";
     $("tapBtn").classList.toggle("locked", sync.on);
     $("tapMain").textContent = sync.on ? "Retaper le temps" : "Tape sur chaque temps";
     $("tapSub").textContent = sync.on ? "pour te recaler sur un nouveau morceau" : "en commençant sur le 1";
@@ -1347,11 +1396,15 @@ body.music-mode .ctrls { display: none; }
     if (taps.length > 16) taps.shift();
     if (taps.length >= 4) {
       const f = fit();
-      if (f.period > 220 && f.period < 800) {
+      // Salsa sits around 150-220 BPM: fold half-time or double-time tapping back into that range
+      tempoNote = "";
+      if (f.period > 520 && f.period < 1300) { f.period /= 2; tempoNote = "Tempo doublé : tu tapais un temps sur deux"; }
+      else if (f.period > 120 && f.period < 220) { f.period *= 2; tempoNote = "Tempo divisé par deux : tu tapais deux fois par temps"; }
+      if (f.period > 220 && f.period < 520) {
         sync.period = f.period; sync.t0 = f.t0;
         if (!sync.on) { sync.on = true; lastSyncBeat = -1; nextClickBeat = Math.floor((now - sync.t0) / sync.period) + 1; syncLoop(); }
       }
-    } else if (!sync.on) showBeat((taps.length - 1) % 8);
+    } else if (!sync.on) { tempoNote = ""; showBeat((taps.length - 1) % 8); }
     renderMusic();
   }
   function keepPhase(newPeriod) {
@@ -1408,6 +1461,21 @@ body.music-mode .ctrls { display: none; }
     return `<li><div><b>${t}</b><span>${a} · ${d}</span></div><div><a href="https://open.spotify.com/search/${q}" target="_blank" rel="noopener">Spotify</a> <a href="https://www.deezer.com/search/${q}" target="_blank" rel="noopener">Deezer</a></div></li>`;
   }).join("");
 
+  // ---------- Grand écran : téléphone posé, lisible de loin ----------
+  let bigHome = null, bigWake = null;
+  async function openBig() {
+    bigHome = $("stage").parentElement;
+    $("slotBig").appendChild($("stage")); $("bigView").hidden = false;
+    try { bigWake = await navigator.wakeLock.request("screen"); } catch (e) {}
+  }
+  function closeBig() {
+    if ($("bigView").hidden) return;
+    $("bigView").hidden = true; if (bigHome) bigHome.appendChild($("stage"));
+    try { bigWake && bigWake.release(); } catch (e) {} bigWake = null;
+  }
+  $("bigOpen").addEventListener("click", openBig);
+  $("bigClose").addEventListener("click", closeBig);
+
   // ---------- Wiring ----------
   for (let b = 40; b <= 250; b++) $("bpm").add(new Option(`${b} BPM`, b));
   KEYS.forEach((k, i) => $("key").add(new Option(k, i)));
@@ -1435,6 +1503,7 @@ body.music-mode .ctrls { display: none; }
   $("scrim").addEventListener("click", closeSheet);
   document.addEventListener("keydown", e => {
     if (e.key === "Escape" && sheetId) closeSheet();
+    if (e.key === "Escape") closeBig();
     if (e.code === "Space" && !/INPUT|SELECT|BUTTON/.test(e.target.tagName)) { e.preventDefault(); playing ? stop() : start(); }
   });
   document.addEventListener("visibilitychange", async () => {
