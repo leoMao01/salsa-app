@@ -21,7 +21,7 @@ img { max-width: 100%; }
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: a 3×3 "bandstand" of instrument tiles, build controls below, and a docked transport (count 1–8, key, tempo, clave, play) at the thumb. */
+/* Layout: one column. The count sits on top, the feet in the middle, the instruction below; a docked transport (count 1–8, voice, tempo, play) at the thumb. Explanations live in the Infos tab. */
 :root {
   --bg: #17110f;        /* espresso, a dim dance hall */
   --panel: #241a16;
@@ -50,7 +50,7 @@ body {
 }
 button, select { font: inherit; color: inherit; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
-.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.wrap { max-width: 720px; margin: 0 auto; padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
 
 header.intro { padding-top: 14px; display: flex; flex-direction: column; gap: 4px; }
 header.intro h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(26px, 7vw, 40px); line-height: .95; margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
@@ -124,7 +124,7 @@ footer p { margin: 0; max-width: 65ch; }
 .count span.and { background: var(--panel-2); }
 .count span i { position: absolute; left: 50%; bottom: 2px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accent); }
 .count span i.b { left: 78%; }
-.ctrls { display: grid; grid-template-columns: repeat(4, 1fr) 58px; gap: 6px; align-items: center; }
+.ctrls { display: grid; grid-template-columns: 1fr 1fr 58px; gap: 6px; align-items: center; }
 .pick {
   position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px; height: 52px; padding: 0 4px; cursor: pointer; min-width: 0;
@@ -191,19 +191,22 @@ footer p { margin: 0; max-width: 65ch; }
 .view { display: flex; flex-direction: column; gap: 12px; }
 
 /* Lessons */
-.lessons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.lesson { border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 8px 8px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lessons { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -2px; padding: 0 2px; }
+.lessons::-webkit-scrollbar { display: none; }
+.lesson { flex: none; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 8px 13px; display: flex; flex-direction: row; align-items: baseline; gap: 6px; text-align: left; cursor: pointer; }
 .lesson small { font: 700 10px var(--font-mono); color: var(--accent); letter-spacing: .04em; }
-.lesson b { font: 800 13.5px/1.15 var(--font-display); }
+.lesson b { font: 800 14px/1.15 var(--font-display); white-space: nowrap; }
 .lesson[aria-pressed=true] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
 
 /* Stage: the count and the feet */
-.stage { background: var(--panel); border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.stage { background: var(--panel); border-radius: 20px; padding: 12px 14px; display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.stage > .bigcount { margin-top: 4px; }
+.stage > .feet { align-self: center; width: auto; height: min(25vh, 240px); max-height: none; max-width: 100%; }
 .stage-main { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 8px; }
-.bigcount { font: 800 clamp(84px, 26vw, 140px)/0.9 var(--font-display); text-align: center; font-variant-numeric: tabular-nums; color: var(--fg); transition: color .08s; }
+.bigcount { font: 800 clamp(76px, 12vh, 130px)/0.9 var(--font-display); text-align: center; font-variant-numeric: tabular-nums; color: var(--fg); transition: color .08s; }
 .bigcount.key { color: var(--hot); }
 .bigcount.pause { color: var(--line); }
-.bigcount small { display: block; font: 600 13px var(--font-body); color: var(--muted); margin-top: 6px; letter-spacing: .04em; }
+.bigcount small { display: block; font: 600 13px var(--font-body); color: var(--muted); margin-top: 2px; letter-spacing: .04em; }
 .feet { width: 100%; max-width: 210px; max-height: 190px; justify-self: center; overflow: visible; }
 .feet .foot { transition: transform .12s ease-out; }
 .feet .sole { fill: transparent; stroke: var(--muted); stroke-width: 2.5; transition: fill .1s, stroke .1s; }
@@ -212,10 +215,10 @@ footer p { margin: 0; max-width: 65ch; }
 .feet text { font: 700 15px var(--font-mono); fill: var(--muted); text-anchor: middle; }
 .feet .guide { stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 3 5; }
 .feet .glab { font: 600 10px var(--font-body); fill: var(--muted); letter-spacing: .08em; }
-.instr { margin: 0; font: 700 clamp(18px, 5vw, 22px)/1.25 var(--font-display); text-align: center; min-height: 2.5em; text-wrap: balance; }
+.instr { margin: 0; font: 700 clamp(18px, 5vw, 22px)/1.25 var(--font-display); text-align: center; min-height: 2.5em; text-wrap: balance; display: flex; align-items: center; justify-content: center; }
 .instr .turn { color: var(--hot); }
 .phrases { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.phrase { border-radius: 12px; padding: 9px 11px; background: var(--bg); display: flex; flex-direction: column; gap: 2px; border: 1px solid transparent; transition: border-color .1s, background .1s; min-width: 0; }
+.phrase { border-radius: 12px; padding: 7px 10px; background: var(--bg); display: flex; flex-direction: column; gap: 2px; border: 1px solid transparent; transition: border-color .1s, background .1s; min-width: 0; }
 .phrase b { font: 700 15px var(--font-mono); color: var(--accent); }
 .phrase span { font-size: 12.5px; color: var(--muted); }
 .phrase.now { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg)); }
@@ -240,14 +243,19 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
 .howto { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
 .tap {
   border: 0; border-radius: 18px; background: var(--accent); color: #1b1404; cursor: pointer;
-  min-height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  min-height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   font: 800 22px var(--font-display); touch-action: manipulation; user-select: none; -webkit-user-select: none;
   transition: transform .06s, background .1s;
 }
 .tap small { font: 600 13px var(--font-body); opacity: .75; }
 .tap:active, .tap.hit { transform: scale(.97); background: color-mix(in srgb, var(--accent) 80%, var(--fg)); }
 .tap.locked { background: var(--panel-2); color: var(--fg); box-shadow: inset 0 0 0 1.5px var(--accent); }
-.fine { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tapcard { display: flex; flex-direction: column; gap: 8px; }
+.tap.locked { min-height: 52px; font-size: 17px; }
+.tap.locked small { display: none; }
+.fine { display: flex; gap: 6px; align-items: center; justify-content: space-between; }
+.fine .btn { padding: 9px 12px; font-size: 14px; white-space: nowrap; }
+.fine b { font: 700 14px var(--font-mono); white-space: nowrap; }
 .bpmfine { display: flex; align-items: center; gap: 8px; }
 .bpmfine b { font: 700 16px var(--font-mono); min-width: 74px; text-align: center; }
 .round { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); font-size: 20px; cursor: pointer; }
@@ -264,7 +272,7 @@ body.music-mode .ctrls { display: none; }
 .help b { color: var(--accent); font-weight: 600; }
 .role-row { display: flex; gap: 8px; align-items: center; }
 .role-row .seg { flex: 1; }
-.role-row .btn { white-space: nowrap; padding: 10px 12px; }
+.role-row .btn { white-space: nowrap; padding: 9px 12px; }
 .big-view {
   position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column;
   padding: max(14px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
@@ -275,18 +283,18 @@ body.music-mode .ctrls { display: none; }
 #slotBig { flex: 1; display: flex; min-height: 0; }
 .big-view .stage { flex: 1; background: transparent; justify-content: space-evenly; gap: 2vh; padding: 0; }
 .big-view .role-row { display: none; }
-.big-view .stage-main { grid-template-columns: 1fr; gap: 1vh; }
 .big-view .bigcount { font-size: min(30vh, 62vw); }
 .big-view .bigcount small { font-size: clamp(16px, 2.6vh, 24px); }
-.big-view .feet { width: auto; height: 34vh; max-height: none; max-width: 100%; }
+.big-view .stage > .feet { height: 34vh; }
 .big-view .feet text { font-size: 17px; }
 .big-view .instr { font-size: clamp(24px, 4.2vh, 46px); min-height: 0; }
 .big-view .phrase b { font-size: clamp(16px, 2.6vh, 26px); }
 .big-view .phrase span { font-size: clamp(13px, 1.9vh, 18px); }
 @media (orientation: landscape) {
-  .big-view .stage-main { grid-template-columns: 1fr 1fr; }
+  .big-view .stage { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr auto; align-items: center; }
   .big-view .bigcount { font-size: min(58vh, 34vw); }
-  .big-view .feet { height: 62vh; }
+  .big-view .stage > .feet { height: 62vh; }
+  .big-view .instr { grid-column: 1 / -1; }
   .big-view .instr { font-size: clamp(20px, 5.5vh, 44px); }
   .big-view .phrases { display: none; }
 }
@@ -297,31 +305,25 @@ body.music-mode .ctrls { display: none; }
 
 
 <div class="wrap">
-  <header class="intro">
-    <h1>Salsa <em>piste par piste</em></h1>
-  </header>
-
   <nav class="tabs" role="tablist">
     <button role="tab" id="tabBasic" data-tab="basic">Pas de base</button>
     <button role="tab" id="tabMusic" data-tab="music">Ma musique</button>
-    <button role="tab" id="tabOrch" data-tab="orch">Orchestre</button>
+    <button role="tab" id="tabInfos" data-tab="infos">Infos</button>
   </nav>
 
-  <section class="view" id="viewBasic">
-    <div class="lessons" id="lessons"></div>
+  <div class="lessons" id="lessons"></div>
 
+  <section class="view" id="viewBasic">
     <div id="slotBasic">
     <div class="stage" id="stage">
       <div class="role-row" id="roleRow"><div class="seg" id="roleSeg"><button data-v="lead">Cavalier</button><button data-v="follow">Cavalière</button></div><button class="btn" id="bigOpen" aria-label="Grand écran">⤢ Grand écran</button></div>
-      <div class="stage-main">
-        <div class="bigcount" id="bigCount">1<small id="bigSub">Appuie sur lecture</small></div>
-        <svg class="feet" id="feet" viewBox="0 0 200 230" aria-hidden="true">
-          <line class="guide" x1="20" y1="60" x2="180" y2="60"/><line class="guide" x1="20" y1="170" x2="180" y2="170"/>
-          <text class="glab" x="100" y="16">AVANT</text><text class="glab" x="100" y="226">ARRIÈRE</text>
-          <g class="foot" id="footL"><path class="sole" d="M0,-40 C13,-40 17,-22 15,-2 C13,18 12,36 0,38 C-12,36 -15,18 -16,-2 C-17,-22 -12,-40 0,-40Z"/><text y="6">G</text></g>
-          <g class="foot" id="footR"><path class="sole" d="M0,-40 C12,-40 17,-22 16,-2 C15,18 12,36 0,38 C-12,36 -13,18 -15,-2 C-17,-22 -13,-40 0,-40Z"/><text y="6">D</text></g>
-        </svg>
-      </div>
+      <div class="bigcount" id="bigCount">1<small id="bigSub">Appuie sur lecture</small></div>
+      <svg class="feet" id="feet" viewBox="0 14 200 204" aria-hidden="true">
+        <line class="guide" x1="20" y1="60" x2="180" y2="60"/><line class="guide" x1="20" y1="170" x2="180" y2="170"/>
+        <text class="glab" x="24" y="54" style="text-anchor:start">AVANT</text><text class="glab" x="24" y="186" style="text-anchor:start">ARRIÈRE</text>
+        <g class="foot" id="footL"><path class="sole" d="M0,-40 C13,-40 17,-22 15,-2 C13,18 12,36 0,38 C-12,36 -15,18 -16,-2 C-17,-22 -12,-40 0,-40Z"/><text y="6">G</text></g>
+        <g class="foot" id="footR"><path class="sole" d="M0,-40 C12,-40 17,-22 16,-2 C15,18 12,36 0,38 C-12,36 -13,18 -15,-2 C-17,-22 -13,-40 0,-40Z"/><text y="6">D</text></g>
+      </svg>
       <p class="instr" id="instr"></p>
       <div class="phrases">
         <div class="phrase" id="ph1"><b>1 · 2 · 3</b><span id="ph1t"></span></div>
@@ -329,7 +331,23 @@ body.music-mode .ctrls { display: none; }
       </div>
     </div>
     </div>
+  </section>
 
+  <section class="view" id="viewMusic" hidden>
+    <div class="tapcard">
+      <button class="tap" id="tapBtn"><span id="tapMain">Tape sur chaque temps</span><small id="tapSub">en commençant sur le 1</small></button>
+      <div class="fine" id="fine" hidden>
+        <button class="btn" id="oneBtn">C'est le 1 !</button>
+        <button class="round" id="bpmDown" aria-label="Un BPM de moins">−</button><b id="syncBpm">— BPM</b><button class="round" id="bpmUp" aria-label="Un BPM de plus">+</button>
+        <button class="round" id="early" aria-label="Plus tôt">◀</button><button class="round" id="late" aria-label="Plus tard">▶</button>
+        <button class="round" id="syncStop" aria-label="Arrêter">■</button>
+      </div>
+      <span id="syncState" hidden></span>
+    </div>
+    <div id="slotMusic"></div>
+  </section>
+
+  <section class="view" id="viewInfos" hidden>
     <div class="card">
       <h3 class="ltitle" id="lessonTitle"></h3>
       <div id="lessonText"></div>
@@ -339,104 +357,46 @@ body.music-mode .ctrls { display: none; }
     <div class="card">
       <div class="lab"><span>Tempo</span><span id="tempoNow"></span></div>
       <div class="tempos" id="tempos"></div>
-      <p class="hint">Une salsa se danse en général entre 160 et 200 BPM. 160 est un bon tempo pour apprendre : assez lent pour placer les pieds, assez vivant pour sentir le groove. Tu peux aussi régler le tempo à l'unité dans la barre du bas.</p>
-    </div>
-  </section>
-
-  <section class="view" id="viewMusic" hidden>
-    <div class="card">
-      <div class="lab"><span>Danse sur ta musique</span><span id="syncState">Pas encore calé</span></div>
-      <button class="tap" id="tapBtn"><span id="tapMain">Tape sur chaque temps</span><small id="tapSub">en commençant sur le 1</small></button>
-      <div class="fine">
-        <button class="btn" id="oneBtn" disabled>C'est le 1 !</button>
-        <div class="bpmfine"><button class="round" id="bpmDown" aria-label="Un BPM de moins" disabled>−</button><b id="syncBpm">— BPM</b><button class="round" id="bpmUp" aria-label="Un BPM de plus" disabled>+</button></div>
-        <button class="btn" id="early" disabled>Plus tôt</button>
-        <button class="btn" id="late" disabled>Plus tard</button>
-        <button class="btn" id="syncStop" disabled>Arrêter</button>
-      </div>
-    </div>
-
-    <div id="slotMusic"></div>
-
-    <div class="card">
-      <div class="lab"><span>Où taper ?</span></div>
-      <ul class="help">
-        <li><b>Tape sur chaque pas.</b> Un coup par temps : 1, 2, 3, 4, 5, 6, 7, 8. En salsa ça fait environ 3 coups par seconde.</li>
-        <li><b>Suis la cloche.</b> Dans les passages forts, la grosse cloche frappe chaque temps, avec un son plus grave sur 1, 3, 5, 7. C'est le repère le plus simple.</li>
-        <li><b>Pas les maracas ni le güiro.</b> Ils vont deux fois plus vite que le temps. Et pas la basse non plus : en salsa, elle évite exprès le 1.</li>
-        <li><b>Pour trouver le 1</b>, écoute les deux coups ouverts des congas, « tou-tou » : ils tombent juste avant le 1 et le 5. Le chanteur démarre aussi souvent ses phrases sur le 1.</li>
-        <li><b>Astuce :</b> marche d'abord sur place avec la musique, puis tape au rythme de tes pieds.</li>
-        <li><b>Pas d'inquiétude :</b> si tu tapes un temps sur deux, l'appli corrige toute seule. Si tu confonds le 1 et le 5, ce n'est pas grave pour t'entraîner : le pas est le même, il démarre juste dans l'autre sens.</li>
-      </ul>
+      <p class="hint">Une salsa se danse en général entre 160 et 200 BPM. 160 est un bon tempo pour apprendre : assez lent pour placer les pieds, assez vivant pour sentir le groove.</p>
     </div>
 
     <div class="card">
-      <div class="lab"><span>Comment ça marche</span></div>
-      <ol class="howto">
-        <li>Lance un morceau de salsa dans Spotify ou Deezer.</li>
-        <li>Reviens ici et tape le gros bouton sur chaque temps, en commençant sur un 1 : 1, 2, 3, 4…</li>
-        <li>Au 4e coup, le compte et les pieds suivent la musique.</li>
-        <li>Le compte se décale ? Touche « C'est le 1 ! » pile sur un 1, ou ajuste avec Plus tôt / Plus tard. Nouveau morceau ? Tape à nouveau le temps.</li>
-      </ol>
-      <div class="seg" id="mModeSeg"><button data-v="march">Marche</button><button data-v="basic">Pas de base</button><button data-v="turn">Le tour</button></div>
-      <div class="seg" id="mSoundSeg"><button data-v="off">Visuel seul</button><button data-v="clic">Clic par-dessus</button></div>
-      <p class="hint">Le clic se mélange à ta musique. Si l'iPhone est en mode silencieux, il ne s'entend pas : seuls l'écran et les pieds suivent.</p>
-    </div>
-
-    <div class="card">
-      <div class="lab"><span>Playlist pour débuter</span></div>
-      <ul class="songs" id="songs"></ul>
-      <p class="hint">Des classiques souvent utilisés en cours : rythme régulier, tempo raisonnable. Les liens ouvrent la recherche dans Spotify ou Deezer.</p>
-    </div>
-  </section>
-
-  <section class="view" id="viewOrch" hidden>
-  <section class="grid" id="grid" aria-label="Instruments"></section>
-
-  <section class="card">
-    <div class="lab"><span>Construire le groove</span><span id="level">1 / 9</span></div>
-    <div class="row">
-      <button class="btn primary" id="addNext">+ <span id="nextName">Piste suivante</span></button>
-      <button class="btn" id="removeLast">− Retirer</button>
-      <button class="btn" id="reset">Clave seule</button>
-      <button class="btn" id="all">Tout</button>
-      <button class="btn" id="shuffle">Hasard</button>
-    </div>
-    <label class="check"><input type="checkbox" id="randAdd"> Rythme tiré au hasard à chaque nouvelle piste</label>
-    <div class="row">
-      <label class="check"><input type="checkbox" id="auto"> Montée auto, une piste toutes les</label>
-      <select id="autoN" class="inline-select" aria-label="Nombre de cycles">
-        <option value="2">2 cycles</option><option value="4">4 cycles</option><option value="8">8 cycles</option>
-      </select>
-      <span class="hint" id="autoInfo"></span>
-    </div>
-    <label class="check"><input type="checkbox" id="vary"> Varier en jouant : au même rythme, un instrument change de rythme</label>
-  </section>
-
-  <section class="opts">
-    <div class="card">
-      <div class="lab"><span>Harmonie</span><span id="keyName"></span></div>
-      <select id="prog" class="full-select" aria-label="Grille d'accords"></select>
-      <p class="hint">La basse et le piano suivent la grille et la tonalité choisies dans la barre du bas.</p>
-    </div>
-    <div class="card">
-      <div class="lab"><span>Trouve le 1</span></div>
-      <div class="seg" id="danceSeg"><button data-v="on1">On1</button><button data-v="on2">On2</button></div>
+      <div class="lab"><span>Compte</span></div>
       <div class="seg" id="countSeg"><button data-v="off">Sans compte</button><button data-v="clic">Clic</button><button data-v="voix">Voix</button></div>
       <div class="row"><span class="hint">Langue de la voix</span>
         <select id="lang" class="inline-select" aria-label="Langue">
           <option value="fr">Français</option><option value="es">Español</option><option value="en">English</option>
         </select>
       </div>
+      <p class="hint">La voix utilise la synthèse vocale du téléphone ; si elle traîne un peu, passe au clic, calé exactement sur le temps.</p>
     </div>
-  </section>
-  </section>
 
-  <footer>
-    <p>Un cycle = 2 mesures = un tour de clave, compté de 1 à 8 comme sur la piste de danse. En On1 on casse sur le 1 et le 5, en On2 sur le 2 et le 6 : ces temps sont cerclés dans le compte. Les points jaunes montrent les coups de clave.</p>
-    <p>La voix utilise la synthèse vocale de ton téléphone ; si elle traîne un peu, passe au clic, calé exactement sur le temps. Pas de son sur iPhone ? Désactive le mode silencieux et relance la lecture.</p>
-    <p>Percussions et piano : enregistrements de la Versilian Community Sample Library (licence CC0). La basse et la cáscara sont synthétisées.</p>
-  </footer>
+    <div class="card">
+      <div class="lab"><span>Ma musique : où taper ?</span></div>
+      <ul class="help">
+        <li><b>Tape sur chaque pas.</b> Un coup par temps : 1, 2, 3, 4, 5, 6, 7, 8. En salsa ça fait environ 3 coups par seconde.</li>
+        <li><b>Suis la cloche.</b> Dans les passages forts, la grosse cloche frappe chaque temps, avec un son plus grave sur 1, 3, 5, 7. C'est le repère le plus simple.</li>
+        <li><b>Pas les maracas ni le güiro.</b> Ils vont deux fois plus vite que le temps. Et pas la basse non plus : en salsa, elle évite exprès le 1.</li>
+        <li><b>Pour trouver le 1</b>, écoute les deux coups ouverts des congas, « tou-tou » : ils tombent juste avant le 1 et le 5. Le chanteur démarre aussi souvent ses phrases sur le 1.</li>
+        <li><b>Astuce :</b> marche d'abord sur place avec la musique, puis tape au rythme de tes pieds.</li>
+        <li><b>Pas d'inquiétude :</b> si tu tapes un temps sur deux, l'appli corrige toute seule. Si tu confonds le 1 et le 5, le pas est le même, il démarre juste dans l'autre sens.</li>
+        <li><b>Ça se décale ?</b> Touche « C'est le 1 ! » pile sur un 1, ou ajuste avec Plus tôt / Plus tard. Nouveau morceau : tape à nouveau le temps.</li>
+      </ul>
+      <div class="seg" id="mSoundSeg"><button data-v="off">Visuel seul</button><button data-v="clic">Clic par-dessus ma musique</button></div>
+      <p class="hint">Le clic se mélange à ta musique. En mode silencieux, il ne s'entend pas : seuls l'écran et les pieds suivent.</p>
+    </div>
+
+    <div class="card">
+      <div class="lab"><span>Playlist pour débuter</span></div>
+      <ul class="songs" id="songs"></ul>
+      <p class="hint">Des classiques souvent utilisés en cours : rythme régulier, tempo raisonnable.</p>
+    </div>
+
+    <footer>
+      <p>Pas de son sur iPhone ? Désactive le mode silencieux et relance la lecture.</p>
+      <p>Percussions et piano : enregistrements de la Versilian Community Sample Library (licence CC0). La basse est synthétisée.</p>
+    </footer>
+  </section>
 </div>
 
 <div class="dock">
@@ -444,9 +404,7 @@ body.music-mode .ctrls { display: none; }
     <div class="count" id="count" aria-label="Compte de 1 à 8"></div>
     <div class="ctrls">
       <button class="pick" id="countBtn"><small>Compte</small><b id="countVal">Off</b></button>
-      <label class="pick"><small>Tonalité</small><b id="keyVal">Do</b><select id="key" aria-label="Tonalité"></select></label>
-      <label class="pick"><small>Tempo</small><b id="bpmVal">170</b><select id="bpm" aria-label="Tempo en BPM"></select></label>
-      <button class="pick" id="claveBtn"><small>Clave</small><b id="claveVal">3-2</b></button>
+      <label class="pick"><small>Tempo</small><b id="bpmVal">160</b><select id="bpm" aria-label="Tempo en BPM"></select></label>
       <button class="play" id="play" aria-label="Lecture"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z"/></svg></button>
     </div>
   </div>
@@ -455,11 +413,6 @@ body.music-mode .ctrls { display: none; }
 <div class="big-view" id="bigView" hidden>
   <button class="x bigx" id="bigClose" aria-label="Fermer le grand écran">×</button>
   <div id="slotBig"></div>
-</div>
-
-<div class="sheet" id="sheet" hidden>
-  <button class="scrim" id="scrim" aria-label="Fermer"></button>
-  <div class="panel" id="panel" role="dialog" aria-modal="true"></div>
 </div>
 
 <script>
@@ -475,6 +428,7 @@ body.music-mode .ctrls { display: none; }
   let fresh = true;
   try { const sv = JSON.parse(localStorage.getItem(STORE) || "null"); if (sv) { Object.assign(state, sv); fresh = false; } } catch (e) {}
   if (!hasSpeech && state.count === "voix") state.count = "clic";
+  if (!["basic", "music", "infos"].includes(state.tab)) state.tab = "basic";
   const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
   let solo = null;
 
@@ -508,21 +462,6 @@ body.music-mode .ctrls { display: none; }
   const piano = (cell, vel) => (s, N = s) => { const e = cell[s % 8]; if (!e) return null; const c = chordAt(Math.floor(N / 4) + e[0]); return { n: e[1].map(([ti, o]) => pnote(c, ti, o)), v: vel(s) }; };
   const bass = cell => (s, N = s) => { const e = cell[s % 8]; if (!e) return null; const c = chordAt(Math.floor(N / 4) + e[0]); return { n: bnote(c, e[1]), len: e[2], v: e[3] || 1 }; };
   const TRI = [[0, 0], [1, 0], [2, 0]], TRI8 = [[0, 0], [1, 0], [2, 0], [0, 1]];
-
-  // ---------- Icons ----------
-  const ICONS = {
-    clave: `<svg viewBox="0 0 64 64"><g transform="rotate(-38 32 32)"><rect x="8" y="28" width="48" height="8" rx="4" fill="#e7a23a"/><rect x="8" y="28" width="48" height="3" rx="1.5" fill="#f6c766"/></g><g transform="rotate(38 32 32)"><rect x="8" y="28" width="48" height="8" rx="4" fill="#d38b25"/><rect x="8" y="28" width="48" height="3" rx="1.5" fill="#f0b850"/></g></svg>`,
-    congas: `<svg viewBox="0 0 64 64"><path d="M6 15h22l-3 40H9z" fill="#d6452f"/><path d="M8 26h18M9 44h16" stroke="#f0c9a0" stroke-width="2"/><ellipse cx="17" cy="15" rx="11" ry="4" fill="#f3e2c3"/><path d="M34 11h24l-3.5 44h-17z" fill="#ef5a3c"/><path d="M36 24h20M37 44h18" stroke="#f0c9a0" stroke-width="2"/><ellipse cx="46" cy="11" rx="12" ry="4.2" fill="#fbecd2"/></svg>`,
-    bongo: `<svg viewBox="0 0 64 64"><rect x="26" y="31" width="12" height="5" rx="2" fill="#8a5a33"/><path d="M4 26h24l-3 18H7z" fill="#a86a39"/><path d="M5 33h22" stroke="#e9cfa6" stroke-width="2"/><ellipse cx="16" cy="26" rx="12" ry="4" fill="#f3e2c3"/><path d="M36 23h26l-3 22H39z" fill="#c07b42"/><path d="M37 31h24" stroke="#e9cfa6" stroke-width="2"/><ellipse cx="49" cy="23" rx="13" ry="4.3" fill="#fbecd2"/></svg>`,
-    campana: `<svg viewBox="0 0 64 64"><path d="M24 8h16l6 36H18z" fill="#e9c23f"/><path d="M26 8h5l-4 36h-6z" fill="#f7dc77"/><rect x="28" y="3" width="8" height="7" rx="2" fill="#9b7d24"/><rect x="18" y="42" width="28" height="4" rx="2" fill="#b8901f"/><rect x="12" y="52" width="36" height="4" rx="2" fill="#e8d7b0" transform="rotate(-8 30 54)"/><circle cx="48" cy="51" r="3.5" fill="#e8d7b0"/></svg>`,
-    guiro: `<svg viewBox="0 0 64 64"><g transform="rotate(-20 30 34)"><rect x="18" y="8" width="22" height="50" rx="11" fill="#e3a63c"/><g stroke="#a86f1c" stroke-width="2.2" stroke-linecap="round"><path d="M21 18h16M20 23h18M20 28h18M20 33h18M20 38h18M20 43h18M21 48h16"/></g></g><rect x="40" y="12" width="4" height="40" rx="2" fill="#efe1b8" transform="rotate(28 42 32)"/></svg>`,
-    maracas: `<svg viewBox="0 0 64 64"><rect x="33" y="32" width="6" height="26" rx="3" fill="#b8402c" transform="rotate(28 36 45)"/><circle cx="27" cy="22" r="13" fill="#f2a43a"/><path d="M16 20c6 4 16 4 22 0" stroke="#3aa37a" stroke-width="3" fill="none"/><rect x="40" y="34" width="6" height="24" rx="3" fill="#a4382a" transform="rotate(-18 43 46)"/><circle cx="44" cy="25" r="11" fill="#e9862f"/><path d="M35 27c4 3 13 3 18 0" stroke="#f6d34a" stroke-width="3" fill="none"/></svg>`,
-    cascara: `<svg viewBox="0 0 64 64"><path d="M32 30v28M32 44l-14 14M32 44l14 14" stroke="#9aa3ab" stroke-width="2.5"/><rect x="5" y="18" width="24" height="14" rx="2" fill="#c8d0d6"/><rect x="5" y="18" width="24" height="4" fill="#e9eef1"/><ellipse cx="17" cy="18" rx="12" ry="3" fill="#f4f1ea"/><rect x="34" y="16" width="26" height="15" rx="2" fill="#b4bcc3"/><rect x="34" y="16" width="26" height="4" fill="#dfe5e9"/><ellipse cx="47" cy="16" rx="13" ry="3.2" fill="#f4f1ea"/><path d="M30 6v14" stroke="#9aa3ab" stroke-width="2.5"/><path d="M24 4h12l2 8H22z" fill="#e9c23f"/></svg>`,
-    bajo: `<svg viewBox="0 0 64 64"><g transform="rotate(-24 32 34)"><rect x="30" y="2" width="4" height="30" rx="2" fill="#5a3a22"/><circle cx="32" cy="4" r="3.2" fill="#5a3a22"/><path d="M32 22c-8 0-11 6-9 11 1 3-1 4-3 6-4 5-2 19 12 19s16-14 12-19c-2-2-4-3-3-6 2-5-1-11-9-11z" fill="#d4874a"/><path d="M28 36c-2 1-2 3 0 4M36 36c2 1 2 3 0 4" stroke="#6a3c1c" stroke-width="1.8" fill="none"/><path d="M31 18v34M33 18v34" stroke="#f3e2c3" stroke-width=".9"/><rect x="28" y="50" width="8" height="3" rx="1" fill="#3a2414"/></g></svg>`,
-    piano: `<svg viewBox="0 0 64 64"><rect x="4" y="14" width="56" height="38" rx="4" fill="#f6f1e8"/><g stroke="#c9bfae" stroke-width="1.4"><path d="M12 14v38M20 14v38M28 14v38M36 14v38M44 14v38M52 14v38"/></g><g fill="#1c1512"><rect x="9" y="14" width="6" height="22" rx="1"/><rect x="17" y="14" width="6" height="22" rx="1"/><rect x="33" y="14" width="6" height="22" rx="1"/><rect x="41" y="14" width="6" height="22" rx="1"/><rect x="49" y="14" width="6" height="22" rx="1"/></g></svg>`,
-  };
-  const SPK_ON = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9.5h4l5-4.5v14l-5-4.5H3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
-  const SPK_OFF = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9.5h4l5-4.5v14l-5-4.5H3z"/><path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
 
   // ---------- Instruments and their rhythms ----------
   const TRACKS = [
@@ -1033,15 +972,7 @@ body.music-mode .ctrls { display: none; }
       nextTime += stepDur(); stepN++;
     }
   }
-  function onCycle() {
-    cycles++;
-    const due = cycles % state.autoN === 0;
-    if (state.vary && due) {
-      const act = TRACKS.filter(t => state.on[t.id]);
-      if (act.length) { randVariant(act[Math.floor(Math.random() * act.length)], true); save(); refresh(); }
-    }
-    if (state.auto) { if (due) addNext(); setAutoInfo(due ? state.autoN : state.autoN - (cycles % state.autoN)); }
-  }
+  function onCycle() { cycles++; }
 
   let wake = null;
   async function start() {
@@ -1056,19 +987,18 @@ body.music-mode .ctrls { display: none; }
     timer = setInterval(scheduler, 25); scheduler();
     requestAnimationFrame(draw);
     try { wake = await navigator.wakeLock.request("screen"); } catch (e) {}
-    setPlayUI(); setAutoInfo(state.autoN);
+    setPlayUI();
   }
   function stop() {
     playing = false; clearInterval(timer); uiQueue.length = 0;
     try { unlockIOS.el && unlockIOS.el.pause(); } catch (e) {}
     try { speechSynthesis.cancel(); } catch (e) {}
     try { wake && wake.release(); } catch (e) {}
-    wake = null; setPlayUI(); showStep(-1); showBeat(-1); setAutoInfo();
+    wake = null; setPlayUI(); showStep(-1); showBeat(-1);
   }
 
   // ---------- UI ----------
   const $ = id => document.getElementById(id);
-  const tiles = {};
   const countEls = [];
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -1078,121 +1008,18 @@ body.music-mode .ctrls { display: none; }
   }
   function paintCount() {
     const keyBeats = state.dance === "on1" ? [0, 4] : [1, 5];
-    const clave = TRACKS[0];
-    countEls.forEach((sp, b) => {
-      sp.classList.toggle("key", keyBeats.includes(b));
-      sp.querySelectorAll("i").forEach(i => i.remove());
-      if (clave.hit(b * 2)) sp.appendChild(document.createElement("i"));
-      if (clave.hit(b * 2 + 1)) { const i = document.createElement("i"); i.className = "b"; sp.appendChild(i); }
-    });
-  }
-
-  function buildGrid() {
-    const g = $("grid"); g.innerHTML = "";
-    TRACKS.forEach((tr, i) => {
-      const el = document.createElement("div");
-      el.className = "tile"; el.style.setProperty("--c", tr.color);
-      el.innerHTML = `
-        <button class="open" aria-label="Choisir le rythme : ${tr.name}">
-          <span class="num">${i + 1}</span>
-          <span class="ico">${ICONS[tr.id]}</span>
-          <span class="tn">${tr.name}</span>
-          <span class="tv"></span>
-        </button>
-        <button class="spk" aria-label="Activer ou couper ${tr.name}"></button>
-        <span class="solo-badge" hidden>SOLO</span>`;
-      el.querySelector(".open").addEventListener("click", () => openSheet(tr.id));
-      el.querySelector(".spk").addEventListener("click", () => { state.on[tr.id] = !state.on[tr.id]; if (solo && !state.on[tr.id] && solo === tr.id) solo = null; save(); refresh(); });
-      g.appendChild(el);
-      tiles[tr.id] = { el, ico: el.querySelector(".ico"), tv: el.querySelector(".tv"), spk: el.querySelector(".spk"), badge: el.querySelector(".solo-badge") };
-    });
+    countEls.forEach((sp, b) => sp.classList.toggle("key", keyBeats.includes(b)));
   }
 
   function refresh() {
-    const firstOff = TRACKS.findIndex(t => !state.on[t.id]);
-    TRACKS.forEach((tr, i) => {
-      const on = !!state.on[tr.id], t = tiles[tr.id];
-      t.el.classList.toggle("on", on && (!solo || solo === tr.id));
-      t.el.classList.toggle("off", !on && i !== firstOff);
-      t.el.classList.toggle("next", !on && i === firstOff);
-      t.el.classList.toggle("muted-by-solo", !!solo && solo !== tr.id);
-      t.tv.textContent = tr.variants[state.var[tr.id]].name;
-      t.spk.innerHTML = on ? SPK_ON : SPK_OFF;
-      t.spk.setAttribute("aria-pressed", on);
-      t.badge.hidden = solo !== tr.id;
-    });
-    const n = TRACKS.filter(t => state.on[t.id]).length;
-    $("level").textContent = `${n} / ${TRACKS.length} pistes`;
-    $("addNext").disabled = firstOff === -1;
-    $("nextName").textContent = firstOff === -1 ? "Orchestre complet" : TRACKS[firstOff].name;
-    $("removeLast").disabled = n === 0;
     $("bpmVal").textContent = state.bpm; $("bpm").value = state.bpm;
-    $("keyVal").textContent = KEYS[state.key]; $("key").value = state.key;
-    $("keyName").textContent = `en ${KEYS[state.key]}${PROGS[state.prog].ch[0] === "i" ? " mineur" : " majeur"}`;
-    $("prog").value = state.prog;
-    $("claveVal").textContent = state.clave === "32" ? "3-2" : "2-3";
     $("countVal").textContent = { off: "Off", clic: "Clic", voix: "Voix" }[state.count];
     $("countBtn").classList.toggle("lit", state.count !== "off");
-    document.querySelectorAll("#danceSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.dance));
     document.querySelectorAll("#countSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.count));
     $("lang").value = state.lang;
-    $("auto").checked = state.auto; $("autoN").value = state.autoN;
-    $("randAdd").checked = state.randAdd; $("vary").checked = state.vary;
     paintCount();
     document.querySelectorAll("#tempos button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.bpm === state.bpm));
     $("tempoNow").textContent = `${state.bpm} BPM`;
-    if (sheetId) renderSheet();
-  }
-
-  function addNext() {
-    const t = TRACKS.find(t => !state.on[t.id]);
-    if (t) { if (state.randAdd) randVariant(t); state.on[t.id] = true; save(); refresh(); }
-  }
-  function removeLast() {
-    const on = TRACKS.filter(t => state.on[t.id]);
-    if (on.length) { const id = on[on.length - 1].id; state.on[id] = false; if (solo === id) solo = null; save(); refresh(); }
-  }
-  function setAutoInfo(left) {
-    const el = $("autoInfo");
-    if (!state.auto || !playing || left == null || TRACKS.every(t => state.on[t.id])) { el.textContent = ""; return; }
-    el.textContent = `prochaine dans ${left} cycle${left > 1 ? "s" : ""}`;
-  }
-
-  // ---------- Instrument sheet ----------
-  let sheetId = null, sheetCells = [];
-  function openSheet(id) { sheetId = id; renderSheet(); $("sheet").hidden = false; }
-  function closeSheet() { sheetId = null; sheetCells = []; $("sheet").hidden = true; }
-  function renderSheet() {
-    const tr = TRACKS.find(t => t.id === sheetId), p = $("panel");
-    const scroll = p.scrollTop;
-    p.style.setProperty("--c", tr.color);
-    p.innerHTML = `
-      <div class="grab"></div>
-      <div class="panel-in">
-        <div class="ph"><span class="ico">${ICONS[tr.id]}</span><div><h2>${tr.name}</h2><p>${tr.role}</p></div><button class="x" id="sx" aria-label="Fermer">×</button></div>
-        <div class="row">
-          <button class="switch" role="switch" id="sOn" aria-checked="${!!state.on[tr.id]}" aria-label="Activer ${tr.name}"></button>
-          <span>${state.on[tr.id] ? "Activé" : "Coupé"}</span>
-          <span style="flex:1"></span>
-          <button class="btn" id="sSolo" aria-pressed="${solo === tr.id}">Isoler</button>
-          <button class="btn" id="sDice">Hasard</button>
-        </div>
-        <div class="vol"><span>Volume</span><input type="range" id="sVol" min="0" max="1" step="0.01" value="${state.vol[tr.id]}" aria-label="Volume ${tr.name}"></div>
-        <div class="steps" id="sSteps"></div>
-        <p class="tip">${tr.tip}</p>
-        <div class="lab"><span>Rythmes</span><span>${tr.variants.length}</span></div>
-        <div class="vlist">${tr.variants.map((v, k) => `<button data-k="${k}" aria-pressed="${k === state.var[tr.id]}">${v.name}<span>${v.d}</span></button>`).join("")}</div>
-      </div>`;
-    p.scrollTop = scroll;
-    const steps = $("sSteps"); sheetCells = [];
-    for (let s = 0; s < 16; s++) { const h = tr.hit(s, s), c = document.createElement("i"); if (h) c.className = h.v >= 0.8 ? "hit acc" : "hit"; steps.appendChild(c); sheetCells.push(c); }
-    if (lastStep >= 0) sheetCells[lastStep].classList.add("now");
-    $("sx").onclick = closeSheet;
-    $("sOn").onclick = () => { state.on[tr.id] = !state.on[tr.id]; save(); refresh(); };
-    $("sSolo").onclick = () => { solo = solo === tr.id ? null : tr.id; if (solo) state.on[tr.id] = true; save(); refresh(); };
-    $("sDice").onclick = () => { randVariant(tr, true); save(); refresh(); };
-    $("sVol").oninput = e => { state.vol[tr.id] = +e.target.value; save(); if (bus[tr.id]) bus[tr.id].gain.setTargetAtTime(state.vol[tr.id] ** 2, ctx.currentTime, 0.02); };
-    p.querySelectorAll(".vlist button").forEach(b => b.onclick = () => { state.var[tr.id] = +b.dataset.k; state.on[tr.id] = true; save(); refresh(); });
   }
 
   // ---------- Playhead ----------
@@ -1200,21 +1027,15 @@ body.music-mode .ctrls { display: none; }
   function showStep(s) {
     if (s === lastStep) return;
     countEls.forEach(c => c.classList.remove("now", "and"));
-    if (lastStep >= 0 && sheetCells[lastStep]) sheetCells[lastStep].classList.remove("now");
     lastStep = s;
     if (s < 0) return;
     countEls[s >> 1].classList.add(s % 2 ? "and" : "now");
-    if (sheetCells[s]) sheetCells[s].classList.add("now");
-  }
-  function flash(id) {
-    if (reduce) return;
-    tiles[id].ico.animate([{ transform: "scale(1.14) rotate(-2deg)" }, { transform: "scale(1)" }], { duration: 150, easing: "ease-out" });
   }
   function draw() {
     if (!playing) return;
     const now = ctx.currentTime;
     let cur = null;
-    while (uiQueue.length && uiQueue[0].t <= now) { cur = uiQueue.shift(); cur.hits.forEach(flash); }
+    while (uiQueue.length && uiQueue[0].t <= now) cur = uiQueue.shift();
     if (cur) { showStep(cur.s); if (cur.s % 2 === 0) showBeat(cur.s >> 1); }
     requestAnimationFrame(draw);
   }
@@ -1261,7 +1082,7 @@ body.music-mode .ctrls { display: none; }
              "Le cavalier casse en avant sur le 1 et en arrière sur le 5. La cavalière fait l'inverse, en miroir, comme si vous vous teniez les mains."],
       ph: ["Le cavalier avance, la cavalière recule", "La cavalière avance, le cavalier recule"],
       preset: { campana: "Noires", maracas: "Sur le temps", congas: "Tumbao", clave: "Son", bajo: "Son", piano: "Accords" } },
-    { title: "Avec tout l'orchestre", short: "Orchestre", mode: "basic",
+    { title: "Avec tout l'orchestre", short: "Groove complet", mode: "basic",
       text: ["Le même pas, sur un vrai groove complet. La basse ne joue plus sur le 1 : c'est normal en salsa, elle anticipe.",
              "Si tu te perds, écoute la cloche (grave sur 1, 3, 5, 7) ou les deux coups ouverts des congas sur 4 et 8, juste avant chaque départ."],
       ph: ["Le cavalier avance, la cavalière recule", "La cavalière avance, le cavalier recule"],
@@ -1282,6 +1103,7 @@ body.music-mode .ctrls { display: none; }
       state.var[id] = Math.max(0, t.variants.findIndex(v => v.name === name));
     });
     save(); refresh(); renderLesson();
+    if (state.tab === "music") renderMusic();
   }
   function renderLesson() {
     const L = LESSONS[state.lesson];
@@ -1295,7 +1117,7 @@ body.music-mode .ctrls { display: none; }
     showBeat(playing || sync.on ? curBeat : -1);
   }
   let curBeat = -1;
-  const curMode = () => state.tab === "music" ? state.musicMode : LESSONS[state.lesson].mode;
+  const curMode = () => LESSONS[state.lesson].mode;
   function setFoot(el, x, pos, weight, move) {
     el.style.transform = `translate(${x}px, ${115 + pos * 55}px)`;
     el.classList.toggle("weight", weight); el.classList.toggle("move", move);
@@ -1325,16 +1147,17 @@ body.music-mode .ctrls { display: none; }
   function setTab(tab) {
     closeBig();
     state.tab = tab; save();
-    $("viewBasic").hidden = tab !== "basic"; $("viewOrch").hidden = tab !== "orch"; $("viewMusic").hidden = tab !== "music";
-    ["Basic", "Music", "Orch"].forEach(n => $("tab" + n).setAttribute("aria-selected", tab === n.toLowerCase()));
+    $("viewBasic").hidden = tab !== "basic"; $("viewMusic").hidden = tab !== "music"; $("viewInfos").hidden = tab !== "infos";
+    $("lessons").hidden = tab === "infos";
+    ["Basic", "Music", "Infos"].forEach(n => $("tab" + n).setAttribute("aria-selected", tab === n.toLowerCase()));
     document.body.classList.toggle("music-mode", tab === "music");
     if (tab === "music") {
       if (playing) stop();
       $("slotMusic").appendChild($("stage")); renderMusic();
-    } else {
+    } else if (tab === "basic") {
       if (sync.on) stopSync();
       $("slotBasic").appendChild($("stage")); renderLesson();
-    }
+    } else renderLesson();
   }
   LESSONS.forEach((L, i) => {
     const b = document.createElement("button"); b.className = "lesson";
@@ -1350,7 +1173,7 @@ body.music-mode .ctrls { display: none; }
   });
   document.querySelectorAll("#roleSeg button").forEach(b => b.addEventListener("click", () => { state.role = b.dataset.v; save(); state.tab === "music" ? renderMusic() : renderLesson(); }));
   $("tabBasic").addEventListener("click", () => setTab("basic"));
-  $("tabOrch").addEventListener("click", () => setTab("orch"));
+  $("tabInfos").addEventListener("click", () => setTab("infos"));
   $("tabMusic").addEventListener("click", () => setTab("music"));
 
   // ---------- Ma musique : se caler sur Spotify / Deezer ----------
@@ -1358,18 +1181,16 @@ body.music-mode .ctrls { display: none; }
   // and run the count from the clock. The audio session is set to "ambient" so a click mixes with the music.
   const sync = { on: false, period: 500, t0: 0 };
   let taps = [], tapIdx = 0, syncRaf = 0, lastSyncBeat = -1, nextClickBeat = 0, tempoNote = "";
-  const MODE_PH = { march: LESSONS[0].ph, basic: LESSONS[1].ph, turn: LESSONS[3].ph };
   function renderMusic() {
-    document.querySelectorAll("#mModeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.musicMode));
     document.querySelectorAll("#mSoundSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.musicSound));
     document.querySelectorAll("#roleSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.role));
-    $("ph1t").textContent = MODE_PH[state.musicMode][0]; $("ph2t").textContent = MODE_PH[state.musicMode][1];
-    ["oneBtn", "bpmDown", "bpmUp", "early", "late", "syncStop"].forEach(id => $(id).disabled = !sync.on);
+    const L = LESSONS[state.lesson]; $("ph1t").textContent = L.ph[0]; $("ph2t").textContent = L.ph[1];
+    $("fine").hidden = !sync.on;
     $("syncBpm").textContent = sync.on ? `${Math.round(60000 / sync.period)} BPM` : "— BPM";
     $("syncState").textContent = sync.on ? (tempoNote || "Calé sur ta musique") : taps.length ? `${Math.min(taps.length, 4)} / 4 coups` : "Pas encore calé";
     $("tapBtn").classList.toggle("locked", sync.on);
-    $("tapMain").textContent = sync.on ? "Retaper le temps" : "Tape sur chaque temps";
-    $("tapSub").textContent = sync.on ? "pour te recaler sur un nouveau morceau" : "en commençant sur le 1";
+    $("tapMain").textContent = sync.on ? (tempoNote ? "Calé · tempo corrigé" : "Calé · retape pour te recaler") : taps.length ? `${Math.min(taps.length, 4)} / 4…` : "Tape sur chaque temps";
+    $("tapSub").textContent = "en commençant sur le 1 · aide dans Infos";
     showBeat(sync.on ? curBeat : -1);
   }
   function musicAudio() {
@@ -1445,7 +1266,6 @@ body.music-mode .ctrls { display: none; }
   $("early").addEventListener("click", () => { sync.t0 -= 25; });
   $("late").addEventListener("click", () => { sync.t0 += 25; });
   $("syncStop").addEventListener("click", stopSync);
-  document.querySelectorAll("#mModeSeg button").forEach(b => b.addEventListener("click", () => { state.musicMode = b.dataset.v; save(); renderMusic(); }));
   document.querySelectorAll("#mSoundSeg button").forEach(b => b.addEventListener("click", () => { state.musicSound = b.dataset.v; save(); musicAudio(); renderMusic(); }));
   const SONGS = [
     ["Yo no sé mañana", "Luis Enrique", "Tranquille, parfaite pour débuter"],
@@ -1478,31 +1298,14 @@ body.music-mode .ctrls { display: none; }
 
   // ---------- Wiring ----------
   for (let b = 40; b <= 250; b++) $("bpm").add(new Option(`${b} BPM`, b));
-  KEYS.forEach((k, i) => $("key").add(new Option(k, i)));
-  PROGS.forEach((p, i) => $("prog").add(new Option(p.name, i)));
 
   $("play").addEventListener("click", () => playing ? stop() : start());
   $("bpm").addEventListener("change", e => { state.bpm = +e.target.value; save(); refresh(); });
-  $("key").addEventListener("change", e => { state.key = +e.target.value; save(); refresh(); });
-  $("prog").addEventListener("change", e => { state.prog = +e.target.value; save(); refresh(); });
-  $("claveBtn").addEventListener("click", () => { state.clave = state.clave === "32" ? "23" : "32"; save(); refresh(); });
   const setCount = v => { state.count = v; if (v === "voix") say(" ", 0); save(); refresh(); };
   $("countBtn").addEventListener("click", () => setCount({ off: "clic", clic: "voix", voix: "off" }[state.count]));
   document.querySelectorAll("#countSeg button").forEach(b => b.addEventListener("click", () => setCount(b.dataset.v)));
-  document.querySelectorAll("#danceSeg button").forEach(b => b.addEventListener("click", () => { state.dance = b.dataset.v; save(); refresh(); }));
   $("lang").addEventListener("change", e => { state.lang = e.target.value; save(); });
-  $("addNext").addEventListener("click", addNext);
-  $("removeLast").addEventListener("click", removeLast);
-  $("reset").addEventListener("click", () => { state.on = { clave: true }; solo = null; save(); refresh(); });
-  $("all").addEventListener("click", () => { TRACKS.forEach(t => state.on[t.id] = true); save(); refresh(); });
-  $("shuffle").addEventListener("click", () => { TRACKS.forEach(t => randVariant(t)); save(); refresh(); });
-  $("randAdd").addEventListener("change", e => { state.randAdd = e.target.checked; save(); });
-  $("vary").addEventListener("change", e => { state.vary = e.target.checked; cycles = 0; save(); });
-  $("auto").addEventListener("change", e => { state.auto = e.target.checked; cycles = 0; save(); setAutoInfo(state.autoN); });
-  $("autoN").addEventListener("change", e => { state.autoN = +e.target.value; cycles = 0; save(); setAutoInfo(state.autoN); });
-  $("scrim").addEventListener("click", closeSheet);
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape" && sheetId) closeSheet();
     if (e.key === "Escape") closeBig();
     if (e.code === "Space" && !/INPUT|SELECT|BUTTON/.test(e.target.tagName)) { e.preventDefault(); playing ? stop() : start(); }
   });
@@ -1512,7 +1315,7 @@ body.music-mode .ctrls { display: none; }
     }
   });
 
-  buildCount(); buildGrid(); refresh();
+  buildCount(); refresh();
   if (fresh) applyLesson(0);
   setTab(state.tab);
 })();
