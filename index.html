@@ -219,6 +219,31 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
 .tempos button span { font-size: 11.5px; color: var(--muted); }
 .tempos button[aria-pressed=true] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--panel-2)); }
 .play.loading { opacity: .7; }
+.tabs { grid-template-columns: repeat(3, 1fr); }
+.tabs button { font-size: 15px; }
+.howto { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.tap {
+  border: 0; border-radius: 18px; background: var(--accent); color: #1b1404; cursor: pointer;
+  min-height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  font: 800 22px var(--font-display); touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  transition: transform .06s, background .1s;
+}
+.tap small { font: 600 13px var(--font-body); opacity: .75; }
+.tap:active, .tap.hit { transform: scale(.97); background: color-mix(in srgb, var(--accent) 80%, var(--fg)); }
+.tap.locked { background: var(--panel-2); color: var(--fg); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.fine { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bpmfine { display: flex; align-items: center; gap: 8px; }
+.bpmfine b { font: 700 16px var(--font-mono); min-width: 74px; text-align: center; }
+.round { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); font-size: 20px; cursor: pointer; }
+.round:disabled { opacity: .4; }
+.songs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.songs li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.songs li:last-child { border-bottom: 0; }
+.songs li div { min-width: 0; }
+.songs li b { display: block; font-weight: 600; }
+.songs li span { font-size: 12.5px; color: var(--muted); }
+.songs a { color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; padding: 6px 4px; }
+body.music-mode .ctrls { display: none; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -229,13 +254,15 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
 
   <nav class="tabs" role="tablist">
     <button role="tab" id="tabBasic" data-tab="basic">Pas de base</button>
+    <button role="tab" id="tabMusic" data-tab="music">Ma musique</button>
     <button role="tab" id="tabOrch" data-tab="orch">Orchestre</button>
   </nav>
 
   <section class="view" id="viewBasic">
     <div class="lessons" id="lessons"></div>
 
-    <div class="stage">
+    <div id="slotBasic">
+    <div class="stage" id="stage">
       <div class="seg" id="roleSeg"><button data-v="lead">Cavalier</button><button data-v="follow">Cavalière</button></div>
       <div class="stage-main">
         <div class="bigcount" id="bigCount">1<small id="bigSub">Appuie sur lecture</small></div>
@@ -252,6 +279,7 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
         <div class="phrase" id="ph2"><b>5 · 6 · 7</b><span id="ph2t"></span></div>
       </div>
     </div>
+    </div>
 
     <div class="card">
       <h3 class="ltitle" id="lessonTitle"></h3>
@@ -263,6 +291,41 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
       <div class="lab"><span>Tempo</span><span id="tempoNow"></span></div>
       <div class="tempos" id="tempos"></div>
       <p class="hint">Une salsa se danse en général entre 160 et 200 BPM. 160 est un bon tempo pour apprendre : assez lent pour placer les pieds, assez vivant pour sentir le groove. Tu peux aussi régler le tempo à l'unité dans la barre du bas.</p>
+    </div>
+  </section>
+
+  <section class="view" id="viewMusic" hidden>
+    <div class="card">
+      <div class="lab"><span>Danse sur ta musique</span><span id="syncState">Pas encore calé</span></div>
+      <button class="tap" id="tapBtn"><span id="tapMain">Tape sur chaque temps</span><small id="tapSub">en commençant sur le 1</small></button>
+      <div class="fine">
+        <button class="btn" id="oneBtn" disabled>C'est le 1 !</button>
+        <div class="bpmfine"><button class="round" id="bpmDown" aria-label="Un BPM de moins" disabled>−</button><b id="syncBpm">— BPM</b><button class="round" id="bpmUp" aria-label="Un BPM de plus" disabled>+</button></div>
+        <button class="btn" id="early" disabled>Plus tôt</button>
+        <button class="btn" id="late" disabled>Plus tard</button>
+        <button class="btn" id="syncStop" disabled>Arrêter</button>
+      </div>
+    </div>
+
+    <div id="slotMusic"></div>
+
+    <div class="card">
+      <div class="lab"><span>Comment ça marche</span></div>
+      <ol class="howto">
+        <li>Lance un morceau de salsa dans Spotify ou Deezer.</li>
+        <li>Reviens ici et tape le gros bouton sur chaque temps, en commençant sur un 1 : 1, 2, 3, 4…</li>
+        <li>Au 4e coup, le compte et les pieds suivent la musique.</li>
+        <li>Le compte se décale ? Touche « C'est le 1 ! » pile sur un 1, ou ajuste avec Plus tôt / Plus tard. Nouveau morceau ? Tape à nouveau le temps.</li>
+      </ol>
+      <div class="seg" id="mModeSeg"><button data-v="march">Marche</button><button data-v="basic">Pas de base</button><button data-v="turn">Le tour</button></div>
+      <div class="seg" id="mSoundSeg"><button data-v="off">Visuel seul</button><button data-v="clic">Clic par-dessus</button></div>
+      <p class="hint">Le clic se mélange à ta musique. Si l'iPhone est en mode silencieux, il ne s'entend pas : seuls l'écran et les pieds suivent.</p>
+    </div>
+
+    <div class="card">
+      <div class="lab"><span>Playlist pour débuter</span></div>
+      <ul class="songs" id="songs"></ul>
+      <p class="hint">Des classiques souvent utilisés en cours : rythme régulier, tempo raisonnable. Les liens ouvrent la recherche dans Spotify ou Deezer.</p>
     </div>
   </section>
 
@@ -342,7 +405,7 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
   const hasSpeech = "speechSynthesis" in window;
   const state = { bpm: 160, clave: "32", on: { clave: true }, vol: {}, var: {}, auto: false, autoN: 4, randAdd: true, vary: false,
                   key: 0, prog: 0, dance: "on1", count: hasSpeech ? "voix" : "clic", lang: "fr",
-                  tab: "basic", lesson: 0, role: "lead" };
+                  tab: "basic", lesson: 0, role: "lead", musicMode: "basic", musicSound: "off" };
   let fresh = true;
   try { const sv = JSON.parse(localStorage.getItem(STORE) || "null"); if (sv) { Object.assign(state, sv); fresh = false; } } catch (e) {}
   if (!hasSpeech && state.count === "voix") state.count = "clic";
@@ -1163,16 +1226,17 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
     const steps = STEPS[L.mode][state.role];
     $("stepList").innerHTML = steps.map((s, b) => `<li class="${b === 3 || b === 7 ? "pause" : ""}"><b>${b + 1}</b><span>${s}</span></li>`).join("");
     document.querySelectorAll("#roleSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.role));
-    showBeat(playing ? curBeat : -1);
+    showBeat(playing || sync.on ? curBeat : -1);
   }
   let curBeat = -1;
+  const curMode = () => state.tab === "music" ? state.musicMode : LESSONS[state.lesson].mode;
   function setFoot(el, x, pos, weight, move) {
     el.style.transform = `translate(${x}px, ${115 + pos * 55}px)`;
     el.classList.toggle("weight", weight); el.classList.toggle("move", move);
   }
   function showBeat(b) {
     curBeat = b;
-    const L = LESSONS[state.lesson], role = state.role;
+    const L = { mode: curMode() }, role = state.role;
     const table = (L.mode === "march" ? MARCH : FEET)[role];
     const f = b < 0 ? [0, 0, role === "lead" ? "R" : "L", null] : table[b];
     setFoot($("footL"), 68, f[0], f[2] === "L", f[3] === "L");
@@ -1182,9 +1246,10 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
     big.firstChild.nodeValue = b < 0 ? "1" : String(b + 1);
     big.classList.toggle("key", b === 0 || b === 4);
     big.classList.toggle("pause", pause);
-    sub.textContent = b < 0 ? "Appuie sur lecture" : pause ? "pause" : L.mode === "march" ? "marche" : "pas";
+    const music = state.tab === "music";
+    sub.textContent = b < 0 ? (music ? "Tape le temps" : "Appuie sur lecture") : pause ? "pause" : L.mode === "march" ? "marche" : "pas";
     const turning = L.mode === "turn" && b >= 4 && b <= 6;
-    $("instr").innerHTML = b < 0 ? (L.mode === "march" ? "Lance la musique et marche sur place." : "Lance la musique. Départ sur le 1.")
+    $("instr").innerHTML = b < 0 ? (music ? "Lance ton morceau, puis tape le temps au-dessus." : L.mode === "march" ? "Lance la musique et marche sur place." : "Lance la musique. Départ sur le 1.")
       : (turning && role === "follow" ? `<span class="turn">↻</span> ` : "") + STEPS[L.mode][role][b];
     $("ph1").classList.toggle("now", b >= 0 && b < 4);
     $("ph2").classList.toggle("now", b >= 4);
@@ -1192,8 +1257,16 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
   }
   function setTab(tab) {
     state.tab = tab; save();
-    $("viewBasic").hidden = tab !== "basic"; $("viewOrch").hidden = tab !== "orch";
-    $("tabBasic").setAttribute("aria-selected", tab === "basic"); $("tabOrch").setAttribute("aria-selected", tab === "orch");
+    $("viewBasic").hidden = tab !== "basic"; $("viewOrch").hidden = tab !== "orch"; $("viewMusic").hidden = tab !== "music";
+    ["Basic", "Music", "Orch"].forEach(n => $("tab" + n).setAttribute("aria-selected", tab === n.toLowerCase()));
+    document.body.classList.toggle("music-mode", tab === "music");
+    if (tab === "music") {
+      if (playing) stop();
+      $("slotMusic").appendChild($("stage")); renderMusic();
+    } else {
+      if (sync.on) stopSync();
+      $("slotBasic").appendChild($("stage")); renderLesson();
+    }
   }
   LESSONS.forEach((L, i) => {
     const b = document.createElement("button"); b.className = "lesson";
@@ -1207,9 +1280,114 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
     b.addEventListener("click", () => { state.bpm = bpm; save(); refresh(); });
     $("tempos").appendChild(b);
   });
-  document.querySelectorAll("#roleSeg button").forEach(b => b.addEventListener("click", () => { state.role = b.dataset.v; save(); renderLesson(); }));
+  document.querySelectorAll("#roleSeg button").forEach(b => b.addEventListener("click", () => { state.role = b.dataset.v; save(); state.tab === "music" ? renderMusic() : renderLesson(); }));
   $("tabBasic").addEventListener("click", () => setTab("basic"));
   $("tabOrch").addEventListener("click", () => setTab("orch"));
+  $("tabMusic").addEventListener("click", () => setTab("music"));
+
+  // ---------- Ma musique : se caler sur Spotify / Deezer ----------
+  // The app can't read streamed audio, so the dancer taps the beat; we fit a tempo and phase to the taps
+  // and run the count from the clock. The audio session is set to "ambient" so a click mixes with the music.
+  const sync = { on: false, period: 500, t0: 0 };
+  let taps = [], tapIdx = 0, syncRaf = 0, lastSyncBeat = -1, nextClickBeat = 0;
+  const MODE_PH = { march: LESSONS[0].ph, basic: LESSONS[1].ph, turn: LESSONS[3].ph };
+  function renderMusic() {
+    document.querySelectorAll("#mModeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.musicMode));
+    document.querySelectorAll("#mSoundSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.musicSound));
+    document.querySelectorAll("#roleSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.role));
+    $("ph1t").textContent = MODE_PH[state.musicMode][0]; $("ph2t").textContent = MODE_PH[state.musicMode][1];
+    ["oneBtn", "bpmDown", "bpmUp", "early", "late", "syncStop"].forEach(id => $(id).disabled = !sync.on);
+    $("syncBpm").textContent = sync.on ? `${Math.round(60000 / sync.period)} BPM` : "— BPM";
+    $("syncState").textContent = sync.on ? "Calé sur ta musique" : taps.length ? `${Math.min(taps.length, 4)} / 4 coups` : "Pas encore calé";
+    $("tapBtn").classList.toggle("locked", sync.on);
+    $("tapMain").textContent = sync.on ? "Retaper le temps" : "Tape sur chaque temps";
+    $("tapSub").textContent = sync.on ? "pour te recaler sur un nouveau morceau" : "en commençant sur le 1";
+    showBeat(sync.on ? curBeat : -1);
+  }
+  function musicAudio() {
+    if (state.musicSound !== "clic") return;
+    try { if (navigator.audioSession) navigator.audioSession.type = "ambient"; } catch (e) {}
+    initAudio();
+    if (!countBus) { countBus = ctx.createGain(); countBus.gain.value = 0.7; countBus.connect(master); }
+    if (ctx.state !== "running") ctx.resume();
+    decodeAll();
+  }
+  function fit() {
+    const n = taps.length, mi = taps.reduce((a, p) => a + p.i, 0) / n, mt = taps.reduce((a, p) => a + p.t, 0) / n;
+    let num = 0, den = 0;
+    taps.forEach(p => { num += (p.i - mi) * (p.t - mt); den += (p.i - mi) ** 2; });
+    const period = num / den;
+    return { period, t0: mt - period * mi };
+  }
+  function onTap() {
+    const now = performance.now();
+    musicAudio();
+    const b = $("tapBtn"); b.classList.add("hit"); setTimeout(() => b.classList.remove("hit"), 90);
+    if (taps.length && now - taps[taps.length - 1].t > 1600) { taps = []; tapIdx = 0; }
+    taps.push({ t: now, i: tapIdx++ });
+    if (taps.length > 16) taps.shift();
+    if (taps.length >= 4) {
+      const f = fit();
+      if (f.period > 220 && f.period < 800) {
+        sync.period = f.period; sync.t0 = f.t0;
+        if (!sync.on) { sync.on = true; lastSyncBeat = -1; nextClickBeat = Math.floor((now - sync.t0) / sync.period) + 1; syncLoop(); }
+      }
+    } else if (!sync.on) showBeat((taps.length - 1) % 8);
+    renderMusic();
+  }
+  function keepPhase(newPeriod) {
+    const now = performance.now(), pos = (now - sync.t0) / sync.period;
+    sync.period = newPeriod; sync.t0 = now - pos * newPeriod;
+    nextClickBeat = Math.floor(pos) + 1;
+  }
+  function stopSync() {
+    sync.on = false; taps = []; tapIdx = 0; cancelAnimationFrame(syncRaf);
+    showStep(-1); renderMusic();
+  }
+  function syncLoop() {
+    if (!sync.on) return;
+    const now = performance.now(), pos = (now - sync.t0) / sync.period;
+    const beat = Math.floor(pos), b = ((beat % 8) + 8) % 8;
+    if (beat !== lastSyncBeat) { lastSyncBeat = beat; showBeat(b); showStep(b * 2); }
+    if (state.musicSound === "clic" && ctx && countBus) {
+      if (nextClickBeat <= beat) nextClickBeat = beat + 1;
+      const tb = sync.t0 + nextClickBeat * sync.period;
+      if (tb - now < 120) {
+        const k = ((nextClickBeat % 8) + 8) % 8;
+        click(ctx.currentTime + Math.max(0, tb - now) / 1000, k === 0, k === 4);
+        nextClickBeat++;
+      }
+    }
+    syncRaf = requestAnimationFrame(syncLoop);
+  }
+  $("tapBtn").addEventListener("pointerdown", e => { e.preventDefault(); onTap(); });
+  $("tapBtn").addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); onTap(); } });
+  $("oneBtn").addEventListener("pointerdown", () => {
+    if (!sync.on) return;
+    const now = performance.now(), pos = (now - sync.t0) / sync.period;
+    sync.t0 = now - Math.round(pos / 8) * 8 * sync.period;   // snap to the nearest cycle start
+    nextClickBeat = Math.floor((now - sync.t0) / sync.period) + 1; lastSyncBeat = -1;
+  });
+  $("bpmDown").addEventListener("click", () => { keepPhase(60000 / (60000 / sync.period - 1)); renderMusic(); });
+  $("bpmUp").addEventListener("click", () => { keepPhase(60000 / (60000 / sync.period + 1)); renderMusic(); });
+  $("early").addEventListener("click", () => { sync.t0 -= 25; });
+  $("late").addEventListener("click", () => { sync.t0 += 25; });
+  $("syncStop").addEventListener("click", stopSync);
+  document.querySelectorAll("#mModeSeg button").forEach(b => b.addEventListener("click", () => { state.musicMode = b.dataset.v; save(); renderMusic(); }));
+  document.querySelectorAll("#mSoundSeg button").forEach(b => b.addEventListener("click", () => { state.musicSound = b.dataset.v; save(); musicAudio(); renderMusic(); }));
+  const SONGS = [
+    ["Yo no sé mañana", "Luis Enrique", "Tranquille, parfaite pour débuter"],
+    ["Idilio", "Willie Colón", "Romantique et posée"],
+    ["Valió la pena", "Marc Anthony", "Groove très net"],
+    ["Brujería", "El Gran Combo de Puerto Rico", "Classique des soirées"],
+    ["Lloraré", "Oscar D'León", "Basse bien audible"],
+    ["La vida es un carnaval", "Celia Cruz", "Énergique, refrain facile"],
+    ["Vivir mi vida", "Marc Anthony", "Plus rapide, pour progresser"],
+  ];
+  $("songs").innerHTML = SONGS.map(([t, a, d]) => {
+    const q = encodeURIComponent(`${t} ${a}`);
+    return `<li><div><b>${t}</b><span>${a} · ${d}</span></div><div><a href="https://open.spotify.com/search/${q}" target="_blank" rel="noopener">Spotify</a> <a href="https://www.deezer.com/search/${q}" target="_blank" rel="noopener">Deezer</a></div></li>`;
+  }).join("");
 
   // ---------- Wiring ----------
   for (let b = 40; b <= 250; b++) $("bpm").add(new Option(`${b} BPM`, b));
@@ -1247,7 +1425,7 @@ h3.ltitle { margin: 0; font: 800 22px/1.1 var(--font-display); }
   });
 
   buildCount(); buildGrid(); refresh();
+  if (fresh) applyLesson(0);
   setTab(state.tab);
-  if (fresh) applyLesson(0); else renderLesson();
 })();
 </script>
