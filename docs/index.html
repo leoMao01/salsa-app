@@ -201,9 +201,9 @@ footer p { margin: 0; max-width: 65ch; }
 /* Stage: the count and the feet */
 .stage { background: var(--panel); border-radius: 20px; padding: 12px 14px; display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
 .stage > .bigcount { margin-top: 4px; }
-.stage > .feet { align-self: center; width: auto; height: min(25vh, 240px); max-height: none; max-width: 100%; }
+.stage > .feet { align-self: center; width: auto; height: min(27vh, 250px); max-height: none; max-width: 100%; }
 .stage-main { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 8px; }
-.bigcount { font: 800 clamp(76px, 12vh, 130px)/0.9 var(--font-display); text-align: center; font-variant-numeric: tabular-nums; color: var(--fg); transition: color .08s; }
+.bigcount { font: 800 clamp(64px, 10vh, 120px)/0.9 var(--font-display); text-align: center; font-variant-numeric: tabular-nums; color: var(--fg); transition: color .08s; }
 .bigcount.key { color: var(--hot); }
 .bigcount.pause { color: var(--line); }
 .bigcount small { display: block; font: 600 13px var(--font-body); color: var(--muted); margin-top: 2px; letter-spacing: .04em; }
@@ -217,6 +217,36 @@ footer p { margin: 0; max-width: 65ch; }
 .feet .glab { font: 600 10px var(--font-body); fill: var(--muted); letter-spacing: .08em; }
 .instr { margin: 0; font: 700 clamp(18px, 5vw, 22px)/1.25 var(--font-display); text-align: center; min-height: 2.5em; text-wrap: balance; display: flex; align-items: center; justify-content: center; }
 .instr .turn { color: var(--hot); }
+.instr { flex-direction: column; gap: 3px; }
+.instr small { font: 500 14px/1.35 var(--font-body); color: var(--muted); }
+.feet .home { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 3 4; opacity: .55; }
+.feet .foot.gain .sole { stroke: var(--accent); fill: color-mix(in srgb, var(--accent) 22%, transparent); }
+.feet .mv line, .feet .wt line { stroke: var(--accent); stroke-width: 3.5; stroke-linecap: round; }
+.feet .mv polygon, .feet .wt polygon { fill: var(--accent); }
+.feet .wt line { stroke-dasharray: 5 5; }
+.feet .wtl { font: 700 11px var(--font-body); fill: var(--accent); text-anchor: middle; letter-spacing: .04em; }
+.feet .mark { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+.board { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bgroup { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.blab { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.frames { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.frame { border: 1px solid transparent; background: var(--bg); border-radius: 9px; padding: 3px 1px 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; cursor: pointer; min-width: 0; }
+.frame svg { width: 100%; height: auto; display: block; }
+.frame b { font: 700 12px var(--font-mono); color: var(--muted); }
+.frame.key b { color: var(--hot); }
+.frame.p svg { opacity: .45; }
+.frame.now { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--bg)); }
+.frame.now b { color: var(--fg); }
+.mini .sole { fill: transparent; stroke: var(--muted); stroke-width: 5; }
+.mini .foot.weight .sole { fill: color-mix(in srgb, var(--fg) 30%, transparent); stroke: var(--fg); }
+.mini .foot.move .sole { stroke: var(--accent); fill: color-mix(in srgb, var(--accent) 50%, transparent); }
+.mini .foot.gain .sole { stroke: var(--accent); }
+.mini .home { fill: none; stroke: var(--muted); stroke-width: 3; stroke-dasharray: 6 7; opacity: .5; }
+.mini .mv line, .mini .wt line { stroke: var(--accent); stroke-width: 8; stroke-linecap: round; }
+.mini .mv polygon, .mini .wt polygon { fill: var(--accent); }
+.mini .wt line { stroke-dasharray: 10 9; }
+.big-view .instr small { font-size: clamp(15px, 2.2vh, 22px); }
+@media (orientation: landscape) { .big-view .board { display: none; } }
 .phrases { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .phrase { border-radius: 12px; padding: 7px 10px; background: var(--bg); display: flex; flex-direction: column; gap: 2px; border: 1px solid transparent; transition: border-color .1s, background .1s; min-width: 0; }
 .phrase b { font: 700 15px var(--font-mono); color: var(--accent); }
@@ -320,15 +350,14 @@ body.music-mode .ctrls { display: none; }
       <div class="bigcount" id="bigCount">1<small id="bigSub">Appuie sur lecture</small></div>
       <svg class="feet" id="feet" viewBox="0 14 200 204" aria-hidden="true">
         <line class="guide" x1="20" y1="60" x2="180" y2="60"/><line class="guide" x1="20" y1="170" x2="180" y2="170"/>
-        <text class="glab" x="24" y="54" style="text-anchor:start">AVANT</text><text class="glab" x="24" y="186" style="text-anchor:start">ARRIÈRE</text>
+        <text class="glab" x="178" y="54" style="text-anchor:end">AVANT</text><text class="glab" x="22" y="186" style="text-anchor:start">ARRIÈRE</text>
+        <g id="feetHome"></g>
         <g class="foot" id="footL"><path class="sole" d="M0,-40 C13,-40 17,-22 15,-2 C13,18 12,36 0,38 C-12,36 -15,18 -16,-2 C-17,-22 -12,-40 0,-40Z"/><text y="6">G</text></g>
         <g class="foot" id="footR"><path class="sole" d="M0,-40 C12,-40 17,-22 16,-2 C15,18 12,36 0,38 C-12,36 -13,18 -15,-2 C-17,-22 -13,-40 0,-40Z"/><text y="6">D</text></g>
+        <g id="feetMarks"></g>
       </svg>
       <p class="instr" id="instr"></p>
-      <div class="phrases">
-        <div class="phrase" id="ph1"><b>1 · 2 · 3</b><span id="ph1t"></span></div>
-        <div class="phrase" id="ph2"><b>5 · 6 · 7</b><span id="ph2t"></span></div>
-      </div>
+      <div class="board" id="board"></div>
     </div>
     </div>
   </section>
@@ -1048,15 +1077,78 @@ body.music-mode .ctrls { display: none; }
 
   // ---------- Pas de base ----------
   // On1 "en ligne" (style portoricain / LA), le plus enseigné en cours débutant.
-  // Feet state after each count: [left pos, right pos, weight, moving foot]; pos -1 = avant, 1 = arrière.
+  // Feet state after each count: [left pos, right pos, weight on, action]; pos -1 = avant, 0 = centre, 1 = arrière.
+  // Action: "L"/"R" = ce pied se déplace, "wL"/"wR" = le pied reste mais le poids passe sur L/R, "mL"/"mR" = marque sur place, null = pause.
   const FEET = {
-    lead:   [[-1, 0, "L", "L"], [-1, 0, "R", "R"], [0, 0, "L", "L"], [0, 0, "L", null], [0, 1, "R", "R"], [0, 1, "L", "L"], [0, 0, "R", "R"], [0, 0, "R", null]],
-    follow: [[0, 1, "R", "R"], [0, 1, "L", "L"], [0, 0, "R", "R"], [0, 0, "R", null], [-1, 0, "L", "L"], [-1, 0, "R", "R"], [0, 0, "L", "L"], [0, 0, "L", null]],
+    lead:   [[-1, 0, "L", "L"], [-1, 0, "R", "wR"], [0, 0, "L", "L"], [0, 0, "L", null], [0, 1, "R", "R"], [0, 1, "L", "wL"], [0, 0, "R", "R"], [0, 0, "R", null]],
+    follow: [[0, 1, "R", "R"], [0, 1, "L", "wL"], [0, 0, "R", "R"], [0, 0, "R", null], [-1, 0, "L", "L"], [-1, 0, "R", "wR"], [0, 0, "L", "L"], [0, 0, "L", null]],
   };
   const MARCH = {
-    lead:   [[0, 0, "L", "L"], [0, 0, "R", "R"], [0, 0, "L", "L"], [0, 0, "R", "R"], [0, 0, "L", "L"], [0, 0, "R", "R"], [0, 0, "L", "L"], [0, 0, "R", "R"]],
-    follow: [[0, 0, "R", "R"], [0, 0, "L", "L"], [0, 0, "R", "R"], [0, 0, "L", "L"], [0, 0, "R", "R"], [0, 0, "L", "L"], [0, 0, "R", "R"], [0, 0, "L", "L"]],
+    lead:   [0, 1, 2, 3, 4, 5, 6, 7].map(b => b % 2 ? [0, 0, "R", "mR"] : [0, 0, "L", "mL"]),
+    follow: [0, 1, 2, 3, 4, 5, 6, 7].map(b => b % 2 ? [0, 0, "L", "mL"] : [0, 0, "R", "mR"]),
   };
+  const DETAIL = {
+    lead: ["Petit pas devant, de la longueur d'un demi-pied. Le poids passe dessus.",
+           "Le pied gauche reste devant. Tu reportes le poids sur le pied droit, sur place.",
+           "Le pied gauche revient au centre, à côté du droit. Le poids passe dessus.",
+           "Tu restes au centre, poids sur le gauche. Le pied droit est libre pour repartir.",
+           "Petit pas derrière, de la longueur d'un demi-pied. Le poids passe dessus.",
+           "Le pied droit reste derrière. Tu reportes le poids sur le pied gauche, sur place.",
+           "Le pied droit revient au centre, à côté du gauche. Le poids passe dessus.",
+           "Tu restes au centre, poids sur le droit. Le pied gauche est libre pour repartir."],
+    follow: ["Petit pas derrière, de la longueur d'un demi-pied. Le poids passe dessus.",
+             "Le pied droit reste derrière. Tu reportes le poids sur le pied gauche, sur place.",
+             "Le pied droit revient au centre, à côté du gauche. Le poids passe dessus.",
+             "Tu restes au centre, poids sur le droit. Le pied gauche est libre pour repartir.",
+             "Petit pas devant, de la longueur d'un demi-pied. Le poids passe dessus.",
+             "Le pied gauche reste devant. Tu reportes le poids sur le pied droit, sur place.",
+             "Le pied gauche revient au centre, à côté du droit. Le poids passe dessus.",
+             "Tu restes au centre, poids sur le gauche. Le pied droit est libre pour repartir."],
+  };
+  const SOLE = {
+    L: "M0,-40 C13,-40 17,-22 15,-2 C13,18 12,36 0,38 C-12,36 -15,18 -16,-2 C-17,-22 -12,-40 0,-40Z",
+    R: "M0,-40 C12,-40 17,-22 16,-2 C15,18 12,36 0,38 C-12,36 -13,18 -15,-2 C-17,-22 -13,-40 0,-40Z",
+  };
+  const FX = { L: 68, R: 132 }, fy = pos => 115 + pos * 55;
+  const feetTable = () => (curMode() === "march" ? MARCH : FEET)[state.role];
+  function arrowSvg(x1, y1, x2, y2, cls, h = 10) {
+    const a = Math.atan2(y2 - y1, x2 - x1), w = 0.5;
+    const p1 = `${x2 - h * Math.cos(a - w)},${y2 - h * Math.sin(a - w)}`, p2 = `${x2 - h * Math.cos(a + w)},${y2 - h * Math.sin(a + w)}`;
+    const ex = x2 - (h * 0.6) * Math.cos(a), ey = y2 - (h * 0.6) * Math.sin(a);
+    return `<g class="${cls}"><line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}"/><polygon points="${x2},${y2} ${p1} ${p2}"/></g>`;
+  }
+  // Arrows for one count: how the moving foot travelled, or where the weight went
+  function marksSvg(f, prev, label = true) {
+    const act = f[3]; let out = "";
+    if (act === "L" || act === "R") {
+      const i = act === "L" ? 0 : 1, x = act === "L" ? 30 : 170, y1 = fy(prev[i]), y2 = fy(f[i]);
+      if (y1 !== y2) { const d = y2 > y1 ? 1 : -1; out += arrowSvg(x, y1 + 4 * d, x, y2 - 2 * d, "mv"); }
+    } else if (act === "wL" || act === "wR") {
+      const to = act[1], from = to === "L" ? "R" : "L";
+      const tx = FX[to], ty = fy(f[to === "L" ? 0 : 1]), sx = FX[from], sy = fy(f[from === "L" ? 0 : 1]);
+      const a = Math.atan2(ty - sy, tx - sx), k = 21;
+      out += arrowSvg(sx + k * Math.cos(a), sy + k * Math.sin(a), tx - k * Math.cos(a), ty - k * Math.sin(a), "wt", 9);
+    } else if (act === "mL" || act === "mR") {
+      const x = FX[act[1]]; out += `<ellipse class="mark" cx="${x}" cy="115" rx="26" ry="50"/>`;
+    }
+    return out;
+  }
+  const homeSvg = () => `<path class="home" transform="translate(68 115)" d="${SOLE.L}"/><path class="home" transform="translate(132 115)" d="${SOLE.R}"/>`;
+  function miniSvg(b) {
+    const t = feetTable(), f = t[b], prev = t[(b + 7) % 8], act = f[3];
+    const foot = (k, i) => `<g class="foot${f[2] === k ? " weight" : ""}${act === k || act === "m" + k ? " move" : ""}${act === "w" + k ? " gain" : ""}" transform="translate(${FX[k]} ${fy(f[i])})"><path class="sole" d="${SOLE[k]}"/></g>`;
+    return `<svg class="mini" viewBox="18 12 164 210" aria-hidden="true">${homeSvg()}${foot("L", 0)}${foot("R", 1)}${marksSvg(f, prev, false)}</svg>`;
+  }
+  function renderBoard() {
+    const L = LESSONS[state.lesson], mode = curMode();
+    const frame = b => {
+      const pause = mode !== "march" && (b === 3 || b === 7);
+      return `<button class="frame${pause ? " p" : ""}${b === 0 || b === 4 ? " key" : ""}" data-b="${b}" aria-label="Temps ${b + 1}">${miniSvg(b)}<b>${b + 1}</b></button>`;
+    };
+    $("board").innerHTML = [0, 1].map(g => `<div class="bgroup"><span class="blab">${L.ph[g]}</span><div class="frames">${[0, 1, 2, 3].map(i => frame(g * 4 + i)).join("")}</div></div>`).join("");
+    $("board").querySelectorAll(".frame").forEach(fr => fr.addEventListener("click", () => { if (!playing && !sync.on) showBeat(+fr.dataset.b); }));
+    $("feetHome").innerHTML = homeSvg();
+  }
   const STEPS = {
     march: {
       lead: ["Pied gauche, appuie bien", "Pied droit", "Pied gauche", "Pied droit", "Pied gauche", "Pied droit", "Pied gauche", "Pied droit"],
@@ -1110,7 +1202,7 @@ body.music-mode .ctrls { display: none; }
     document.querySelectorAll(".lesson").forEach((b, i) => b.setAttribute("aria-pressed", i === state.lesson));
     $("lessonTitle").textContent = L.title;
     $("lessonText").innerHTML = L.text.map(p => `<p class="prose">${p}</p>`).join("");
-    $("ph1t").textContent = L.ph[0]; $("ph2t").textContent = L.ph[1];
+    renderBoard();
     const steps = STEPS[L.mode][state.role];
     $("stepList").innerHTML = steps.map((s, b) => `<li class="${b === 3 || b === 7 ? "pause" : ""}"><b>${b + 1}</b><span>${s}</span></li>`).join("");
     document.querySelectorAll("#roleSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.role));
@@ -1118,18 +1210,21 @@ body.music-mode .ctrls { display: none; }
   }
   let curBeat = -1;
   const curMode = () => LESSONS[state.lesson].mode;
-  function setFoot(el, x, pos, weight, move) {
+  function setFoot(el, x, pos, weight, move, gain) {
     el.style.transform = `translate(${x}px, ${115 + pos * 55}px)`;
-    el.classList.toggle("weight", weight); el.classList.toggle("move", move);
+    el.classList.toggle("weight", weight); el.classList.toggle("move", move); el.classList.toggle("gain", gain);
   }
   function showBeat(b) {
     curBeat = b;
     $("bigView").dataset.beat = b;
     const L = { mode: curMode() }, role = state.role;
-    const table = (L.mode === "march" ? MARCH : FEET)[role];
+    const table = feetTable();
     const f = b < 0 ? [0, 0, role === "lead" ? "R" : "L", null] : table[b];
-    setFoot($("footL"), 68, f[0], f[2] === "L", f[3] === "L");
-    setFoot($("footR"), 132, f[1], f[2] === "R", f[3] === "R");
+    const act = f[3] || "";
+    setFoot($("footL"), 68, f[0], f[2] === "L", act === "L" || act === "mL", act === "wL");
+    setFoot($("footR"), 132, f[1], f[2] === "R", act === "R" || act === "mR", act === "wR");
+    $("feetMarks").innerHTML = b < 0 ? "" : marksSvg(f, table[(b + 7) % 8]);
+    document.querySelectorAll("#board .frame").forEach(fr => fr.classList.toggle("now", +fr.dataset.b === b));
     const big = $("bigCount"), sub = $("bigSub");
     const pause = L.mode !== "march" && (b === 3 || b === 7);
     big.firstChild.nodeValue = b < 0 ? "1" : String(b + 1);
@@ -1139,9 +1234,8 @@ body.music-mode .ctrls { display: none; }
     sub.textContent = b < 0 ? (music ? "Tape le temps" : "Appuie sur lecture") : pause ? "pause" : L.mode === "march" ? "marche" : "pas";
     const turning = L.mode === "turn" && b >= 4 && b <= 6;
     $("instr").innerHTML = b < 0 ? (music ? "Lance ton morceau, puis tape le temps au-dessus." : L.mode === "march" ? "Lance la musique et marche sur place." : "Lance la musique. Départ sur le 1.")
-      : (turning && role === "follow" ? `<span class="turn">↻</span> ` : "") + STEPS[L.mode][role][b];
-    $("ph1").classList.toggle("now", b >= 0 && b < 4);
-    $("ph2").classList.toggle("now", b >= 4);
+      : `<span>${turning && role === "follow" ? `<span class="turn">↻</span> ` : ""}${STEPS[L.mode][role][b]}</span><small>${
+          L.mode === "march" ? `Lève le pied ${act === "mL" ? "gauche" : "droit"} et repose-le sur place. Le poids passe dessus.` : DETAIL[role][b]}</small>`;
     document.querySelectorAll("#stepList li").forEach((li, i) => li.classList.toggle("now", i === b));
   }
   function setTab(tab) {
@@ -1184,7 +1278,7 @@ body.music-mode .ctrls { display: none; }
   function renderMusic() {
     document.querySelectorAll("#mSoundSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.musicSound));
     document.querySelectorAll("#roleSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.role));
-    const L = LESSONS[state.lesson]; $("ph1t").textContent = L.ph[0]; $("ph2t").textContent = L.ph[1];
+    renderBoard();
     $("fine").hidden = !sync.on;
     $("syncBpm").textContent = sync.on ? `${Math.round(60000 / sync.period)} BPM` : "— BPM";
     $("syncState").textContent = sync.on ? (tempoNote || "Calé sur ta musique") : taps.length ? `${Math.min(taps.length, 4)} / 4 coups` : "Pas encore calé";
